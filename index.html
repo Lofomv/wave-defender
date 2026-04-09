@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>WAVE DEFENDER | GRID STRATEGY</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,21 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
-    <meta name="description" content="Wave Defender: Jogo de defesa em grid com elementos rogue-like e combos estratégicos.">
+    <meta name="description" content="Wave Defender: Jogo de defesa em grid com combos estratégicos, guerreiros e sinergias visuais.">
 </head>
 <body>
     <!-- VFX -->
     <div id="flash-red" class="flash-effect flash-red"></div>
     <div id="flash-green" class="flash-effect flash-green"></div>
     <div id="toast">COMBO ATIVADO!</div>
-    <div id="particles-container"></div> <!-- For coins and damage popups -->
+    <div id="particles-container"></div>
 
     <header>
         <div class="logo-container">
             <h1 class="logo">WAVE DEFENDER</h1>
             <span class="logo-sub">ROGUE · GRID · DEFENSE</span>
         </div>
-        
+
         <div class="hud-group">
             <div class="hud-item" title="Moedas">
                 <span class="hud-label" style="color:var(--gold)">🪙 CRÉDITOS</span>
@@ -56,6 +56,7 @@
     <main>
         <div class="panel" id="main-viewport">
             <div class="panel-header">Campo de Defesa — Hover para ver Sinergias</div>
+            <div id="active-combos" class="active-combos-bar"></div>
             <div class="game-viewport">
                 <div id="grid-container"></div>
             </div>
@@ -75,6 +76,7 @@
             <section class="panel" id="ctrl-panel">
                 <div class="panel-header">Comando</div>
                 <div class="control-panel">
+                    <button class="btn btn-codex-ctrl" id="btn-codex-single" onclick="openCodex()" title="Codex — Bestiário, Estruturas & Combos">📖</button>
                     <button class="btn btn-shop" id="btn-shop" onclick="openShop()" title="Mercado">🛒 MERCADO</button>
                     <button class="btn" id="btn-start" onclick="startWave()">▶ INICIAR WAVE</button>
                     <button class="btn btn-danger" id="btn-reset" onclick="resetGame()" title="Reiniciar">↺</button>
@@ -83,7 +85,7 @@
         </aside>
     </main>
 
-    <!-- Reward Choice Modal (Post Wave) -->
+    <!-- Reward Choice Modal -->
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal">
             <h2 class="modal-title" id="m-title">ESCOLHA SEU BÔNUS</h2>
@@ -112,6 +114,31 @@
                     <div class="option-grid" id="shop-grid-black"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Codex Modal (Bestiário + Catálogo + Combos) -->
+    <div class="modal-overlay codex-overlay" id="codex-overlay">
+        <div class="codex-modal">
+            <div class="codex-header">
+                <h2 class="modal-title codex-title">📖 CODEX</h2>
+                <div class="codex-tabs">
+                    <button class="codex-tab active" data-tab="bestiary" onclick="switchCodexTab('bestiary')">
+                        <span class="codex-tab-icon">👹</span>
+                        <span class="codex-tab-label">MONSTROS</span>
+                    </button>
+                    <button class="codex-tab" data-tab="structures" onclick="switchCodexTab('structures')">
+                        <span class="codex-tab-icon">🏗️</span>
+                        <span class="codex-tab-label">ESTRUTURAS</span>
+                    </button>
+                    <button class="codex-tab" data-tab="combos" onclick="switchCodexTab('combos')">
+                        <span class="codex-tab-icon">⚡</span>
+                        <span class="codex-tab-label">COMBOS</span>
+                    </button>
+                </div>
+                <button class="btn-close" onclick="closeCodex()">✕</button>
+            </div>
+            <div class="codex-body" id="codex-content"></div>
         </div>
     </div>
 
