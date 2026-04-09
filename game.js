@@ -288,15 +288,30 @@ const SPECIAL_COLORS = { fast: '#f39c12', venomous: '#27ae60', tank: '#3498db', 
 // STATE
 // ══════════════════════════════════════════════
 
-let bestiaryData = JSON.parse(localStorage.getItem('wdBestiary') || '{}');
+function getStorage(key, def) {
+    try {
+        const val = localStorage.getItem(key);
+        return val !== null ? val : def;
+    } catch(e) {
+        console.warn("LocalStorage indisponível:", e);
+        return def;
+    }
+}
+
+let bestiaryData = {};
+try {
+    bestiaryData = JSON.parse(getStorage('wdBestiary', '{}'));
+} catch(e) {
+    console.warn("Erro ao ler bestiário:", e);
+}
 
 let G = {
     wave: 1, hp: 30, maxHp: 30, coins: 0, gridSize: 3,
     cells: [], phase: 'idle', placing: null, placingName: null,
     isStarterPick: false, timer: null, activeCombos: [],
     kills: 0, pendingReward: false,
-    highScore: parseInt(localStorage.getItem('wdHS') || '1'),
-    highKills: parseInt(localStorage.getItem('wdHK') || '0'),
+    highScore: parseInt(getStorage('wdHS', '1')),
+    highKills: parseInt(getStorage('wdHK', '0')),
 };
 
 // ══════════════════════════════════════════════
@@ -310,7 +325,12 @@ function resetGame() {
     initGrid(); document.getElementById('game-over').classList.remove('active'); document.getElementById('battle-log').innerHTML = ''; closeShop(); closeCodex();
     addLog('// SISTEMA REINICIADO', 'info'); updateHUD(); renderGrid(); showStarter();
 }
-function saveRecord() { if (G.wave > G.highScore) { G.highScore = G.wave; localStorage.setItem('wdHS', String(G.highScore)); } if (G.kills > G.highKills) { G.highKills = G.kills; localStorage.setItem('wdHK', String(G.highKills)); } }
+function saveRecord() {
+    try {
+        if (G.wave > G.highScore) { G.highScore = G.wave; localStorage.setItem('wdHS', String(G.highScore)); }
+        if (G.kills > G.highKills) { G.highKills = G.kills; localStorage.setItem('wdHK', String(G.highKills)); }
+    } catch(e) {}
+}
 function getAdj(idx) { const n = G.gridSize, r = Math.floor(idx / n), c = idx % n, a = []; if (r > 0) a.push(idx - n); if (r < n - 1) a.push(idx + n); if (c > 0) a.push(idx - 1); if (c < n - 1) a.push(idx + 1); return a; }
 function clampLevel(lv) { return Math.min(lv, 3); }
 
@@ -326,7 +346,11 @@ function getPoisonArmorReduce(idx) { let r = 0; getAdj(idx).forEach(n => { const
 
 function recordEncounter(name) { if (!bestiaryData[name]) bestiaryData[name] = { kills: 0 }; saveBestiary(); }
 function recordKill(name) { if (!bestiaryData[name]) bestiaryData[name] = { kills: 0 }; bestiaryData[name].kills++; saveBestiary(); }
-function saveBestiary() { localStorage.setItem('wdBestiary', JSON.stringify(bestiaryData)); }
+function saveBestiary() { 
+    try {
+        localStorage.setItem('wdBestiary', JSON.stringify(bestiaryData)); 
+    } catch(e) {}
+}
 
 function getCashbackRate() { let rate = 0; G.cells.forEach((c, i) => { if (c.struct === 'cofre') { const lvl = Math.min(getEffLevel(i), 3); const cb = STRUCTS.cofre.levels[lvl].cashback || 0; if (cb > rate) rate = cb; } }); return rate; }
 
@@ -1121,4 +1145,10 @@ window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTim
 window.resetGame = resetGame; window.startWave = startWave; window.openShop = openShop; window.closeShop = closeShop;
 window.openCodex = openCodex; window.closeCodex = closeCodex; window.switchCodexTab = switchCodexTab;
 
-initGrid(); updateHUD(); renderGrid(); showStarter();
+initGrid(); updateHUD(); renderGrid(); 
+try {
+    showStarter();
+    console.log("🎮 WAVE DEFENDER inicializado com sucesso!");
+} catch(e) {
+    console.error("❌ Erro na inicialização do jogo:", e);
+}
