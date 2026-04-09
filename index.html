@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAVE DEFENDER | GRID STRATEGY</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <meta name="description" content="Wave Defender: Jogo de defesa em grid com elementos rogue-like e combos estratégicos.">
+</head>
+<body>
+    <!-- VFX -->
+    <div id="flash-red" class="flash-effect flash-red"></div>
+    <div id="flash-green" class="flash-effect flash-green"></div>
+    <div id="toast">COMBO ATIVADO!</div>
+    <div id="particles-container"></div> <!-- For coins and damage popups -->
+
+    <header>
+        <div class="logo-container">
+            <h1 class="logo">WAVE DEFENDER</h1>
+            <span class="logo-sub">ROGUE · GRID · DEFENSE</span>
+        </div>
+        
+        <div class="hud-group">
+            <div class="hud-item" title="Moedas">
+                <span class="hud-label" style="color:var(--gold)">🪙 CRÉDITOS</span>
+                <span class="hud-value" id="h-coins" style="color:var(--gold);text-shadow:0 0 10px rgba(241,196,15,0.4)">0</span>
+            </div>
+            <div class="hud-item" title="Maior wave alcançada">
+                <span class="hud-label" style="color:var(--text-dim)">⭐ RECORDE</span>
+                <span class="hud-value" id="h-record" style="color:var(--text-dim);">1</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">WAVE</span>
+                <span class="hud-value" id="h-wave">1</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">ABATES</span>
+                <span class="hud-value" id="h-kills" style="color:var(--accent2)">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">BASE HP</span>
+                <div class="header-hp-bar" id="header-hp-container">
+                    <div class="header-hp-fill" id="h-hp-fill"></div>
+                    <span class="header-hp-text"><span id="h-hp">30</span>/<span id="h-maxhp">30</span></span>
+                </div>
+            </div>
+            <div class="badge badge-phase-idle" id="phase-badge">PREPARAÇÃO</div>
+        </div>
+    </header>
+
+    <main>
+        <div class="panel" id="main-viewport">
+            <div class="panel-header">Campo de Defesa — Hover para ver Sinergias</div>
+            <div class="game-viewport">
+                <div id="grid-container"></div>
+            </div>
+        </div>
+
+        <aside class="side-panels">
+            <section class="panel" id="enemy-panel">
+                <div class="panel-header">Rastreador de Hostis</div>
+                <div class="enemy-list" id="enemy-list"></div>
+            </section>
+
+            <section class="panel" id="log-panel">
+                <div class="panel-header">Log de Combate</div>
+                <div id="battle-log"></div>
+            </section>
+
+            <section class="panel" id="ctrl-panel">
+                <div class="panel-header">Comando</div>
+                <div class="control-panel">
+                    <button class="btn btn-shop" id="btn-shop" onclick="openShop()" title="Mercado">🛒 MERCADO</button>
+                    <button class="btn" id="btn-start" onclick="startWave()">▶ INICIAR WAVE</button>
+                    <button class="btn btn-danger" id="btn-reset" onclick="resetGame()" title="Reiniciar">↺</button>
+                </div>
+            </section>
+        </aside>
+    </main>
+
+    <!-- Reward Choice Modal (Post Wave) -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <h2 class="modal-title" id="m-title">ESCOLHA SEU BÔNUS</h2>
+            <p class="modal-subtitle">Selecione uma diretiva para o próximo ciclo</p>
+            <div class="option-grid" id="opt-grid"></div>
+        </div>
+    </div>
+
+    <!-- Shop Modal -->
+    <div class="modal-overlay" id="shop-overlay">
+        <div class="shop-modal">
+            <div class="shop-header">
+                <h2 class="modal-title" style="margin:0; text-align:left;">MERCADO DINÂMICO</h2>
+                <div class="shop-coins">🪙 <span id="shop-coins-val">0</span></div>
+                <button class="btn-close" onclick="closeShop()">✕</button>
+            </div>
+            
+            <div class="shop-sections">
+                <div class="shop-section">
+                    <h3 class="section-title">SUPLY BASE (Comuns)</h3>
+                    <div class="option-grid" id="shop-grid-normal"></div>
+                </div>
+                
+                <div class="shop-section" id="black-market-section" style="display:none;">
+                    <h3 class="section-title bm-title">☠️ MERCADO NEGRO (Alto Risco)</h3>
+                    <div class="option-grid" id="shop-grid-black"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="game-over">
+        <h1>MISSÃO FRACASSADA</h1>
+        <p id="go-stats">Wave: 1 | Abates: 0 | Recorde: 1</p>
+        <button class="btn go-btn" onclick="resetGame()">↺ REINICIAR</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

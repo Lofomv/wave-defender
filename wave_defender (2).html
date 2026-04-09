@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAVE DEFENDER</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c10;--panel:#0f1218;--border:#1e2530;
+  --accent:#e8a020;--accent2:#c0392b;
+  --blue:#2980b9;--green:#27ae60;--purple:#8e44ad;--teal:#1abc9c;
+  --text:#c8d4e0;--text-dim:#5a6878;
+  --font-title:'Cinzel Decorative',serif;
+  --font-mono:'Share Tech Mono',monospace;
+  --font-body:'Rajdhani',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);display:flex;flex-direction:column;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(232,160,32,.06) 0%,transparent 70%),
+  repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(30,37,48,.5) 39px,rgba(30,37,48,.5) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(30,37,48,.5) 39px,rgba(30,37,48,.5) 40px)}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 22px;border-bottom:1px solid var(--border);background:rgba(15,18,24,.97);backdrop-filter:blur(8px);flex-shrink:0;z-index:50}
+.logo{font-family:var(--font-title);font-size:15px;color:var(--accent);letter-spacing:2px;text-shadow:0 0 20px rgba(232,160,32,.4)}
+.logo span{color:var(--text-dim);font-size:9px;display:block;letter-spacing:5px;font-family:var(--font-mono)}
+.hud-bar{display:flex;gap:14px;align-items:center}
+.stat{display:flex;flex-direction:column;align-items:center;font-family:var(--font-mono)}
+.stat-label{font-size:8px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase}
+.stat-val{font-size:19px;font-weight:700;line-height:1;color:var(--accent);text-shadow:0 0 10px rgba(232,160,32,.5);transition:color .3s}
+.stat-val.hurt{color:var(--accent2);text-shadow:0 0 12px rgba(192,57,43,.7)}
+.phase-pill{font-family:var(--font-mono);font-size:10px;padding:3px 11px;border-radius:20px;border:1px solid var(--border);letter-spacing:2px;text-transform:uppercase;transition:all .3s;white-space:nowrap}
+.phase-pill.idle{border-color:var(--text-dim);color:var(--text-dim)}
+.phase-pill.wave{border-color:var(--accent2);color:var(--accent2);box-shadow:0 0 10px rgba(192,57,43,.3);animation:pp 1s infinite}
+.phase-pill.pick{border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(39,174,96,.3)}
+.phase-pill.place{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(232,160,32,.3);animation:pp .6s infinite}
+@keyframes pp{0%,100%{opacity:1}50%{opacity:.5}}
+
+main{display:grid;grid-template-columns:1fr 310px;gap:10px;padding:10px 22px;flex:1;min-height:0;overflow:hidden}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.panel::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(232,160,32,.02) 0%,transparent 50%);pointer-events:none}
+.phdr{padding:7px 13px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:9px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.phdr::before{content:'//';color:var(--accent)}
+
+#grid-panel{grid-column:1;min-height:0}
+.grid-area{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;position:relative;min-height:0;overflow:auto}
+#place-hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(232,160,32,.12);border:1px solid var(--accent);border-radius:3px;padding:4px 14px;font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:1px;display:none;z-index:10;animation:pp .8s infinite;white-space:nowrap}
+#place-hint.visible{display:block}
+#grid{display:grid;gap:5px}
+
+.cell{width:76px;height:76px;border-radius:4px;border:1px solid var(--border);background:rgba(15,18,24,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:all .18s;overflow:hidden;font-family:var(--font-mono);cursor:default}
+.cell::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.02),transparent);pointer-events:none}
+.cell.empty{color:var(--text-dim);font-size:8px;letter-spacing:1px}
+.cell.occupied{border-color:var(--sc,var(--border));box-shadow:0 0 10px rgba(var(--sr,0,0,0),.18),inset 0 0 16px rgba(var(--sr,0,0,0),.05)}
+.cell.combo-active{box-shadow:0 0 14px rgba(241,196,15,.4),inset 0 0 10px rgba(241,196,15,.05);border-color:#f1c40f}
+.cell.placeable{border:1px dashed var(--accent);cursor:pointer;background:rgba(232,160,32,.04);animation:ca .8s infinite alternate}
+.cell.placeable:hover{background:rgba(232,160,32,.12);transform:scale(1.05);box-shadow:0 0 18px rgba(232,160,32,.3)}
+.cell.placeable::before{content:'＋';font-size:22px;color:var(--accent);opacity:.4}
+@keyframes ca{to{border-color:rgba(232,160,32,.35)}}
+.cell-icon{font-size:25px;line-height:1}
+.cell-name{font-size:7px;letter-spacing:1px;color:var(--text-dim);margin-top:2px;text-transform:uppercase}
+.cell-lv{position:absolute;top:3px;right:5px;font-size:8px;color:var(--accent)}
+.cell-boost{position:absolute;top:3px;left:5px;font-size:8px;color:var(--purple)}
+.cell-hpbar{position:absolute;bottom:3px;left:5px;right:5px;height:3px;background:rgba(255,255,255,.07);border-radius:2px}
+.cell-hpbar-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
+
+#right-col{grid-column:2;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+#enemy-panel{flex-shrink:0}
+#enemy-row{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px;min-height:56px;align-items:center}
+.enemy{position:relative;width:42px;height:42px;border-radius:50%;background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);display:flex;align-items:center;justify-content:center;font-size:19px;animation:se .3s ease;transition:all .2s}
+.enemy.low-hp{border-color:var(--accent2);background:rgba(192,57,43,.25);animation:sh .15s infinite}
+.enemy.frozen{border-color:#74b9ff;background:rgba(116,185,255,.12)}
+@keyframes se{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes sh{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.e-hp{position:absolute;bottom:-7px;left:0;right:0;height:3px;background:rgba(255,255,255,.1);border-radius:2px}
+.e-hp-f{height:100%;background:var(--accent2);border-radius:2px;transition:width .18s}
+
+#log-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+#log{flex:1;padding:7px 11px;overflow-y:auto;font-family:var(--font-mono);font-size:10px;line-height:1.7;color:var(--text-dim);min-height:0}
+#log::-webkit-scrollbar{width:3px}
+#log::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.le{padding:1px 0;border-bottom:1px solid rgba(30,37,48,.4)}
+.le.good{color:var(--green)}.le.bad{color:var(--accent2)}.le.info{color:var(--accent)}.le.spec{color:var(--purple)}.le.teal{color:var(--teal)}
+
+#ctrl-panel{flex-shrink:0}
+.ctrl-body{padding:9px 12px;display:flex;gap:8px}
+.btn{flex:1;font-family:var(--font-mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:8px 10px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .18s;background:transparent}
+.btn:hover:not(:disabled){filter:brightness(1.2)}.btn:active:not(:disabled){transform:scale(.97)}.btn:disabled{opacity:.35;cursor:default}
+.btn-primary{color:var(--accent);border-color:var(--accent);background:rgba(232,160,32,.06)}
+.btn-danger{color:var(--accent2);border-color:var(--accent2);background:rgba(192,57,43,.06)}
+
+#modal-overlay{position:fixed;inset:0;background:rgba(5,7,10,.88);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:200}
+#modal-overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:22px;max-width:620px;width:95%;position:relative;animation:mi .22s ease;box-shadow:0 0 60px rgba(0,0,0,.6)}
+@keyframes mi{from{transform:translateY(16px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.modal::before{content:'';position:absolute;inset:0;border-radius:6px;background:linear-gradient(135deg,rgba(232,160,32,.03),transparent 60%);pointer-events:none}
+.modal-title{font-family:var(--font-title);font-size:13px;color:var(--accent);letter-spacing:2px;margin-bottom:4px}
+.modal-sub{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:14px}
+.opt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.opt-card{border:1px solid var(--border);border-radius:4px;padding:11px 7px;text-align:center;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;background:rgba(10,12,16,.6)}
+.opt-card::before{content:'';position:absolute;inset:0;background:var(--cc,var(--accent));opacity:0;transition:opacity .18s}
+.opt-card:hover:not(.disabled){border-color:var(--cc,var(--accent));transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.opt-card:hover:not(.disabled)::before{opacity:.06}
+.opt-card.disabled{opacity:.4;cursor:default}
+.opt-icon{font-size:26px;margin-bottom:5px}
+.opt-name{font-family:var(--font-mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text);margin-bottom:4px}
+.opt-desc{font-size:10px;color:var(--text-dim);line-height:1.4;margin-bottom:5px;min-height:26px}
+.opt-badge{display:inline-block;font-family:var(--font-mono);font-size:8px;padding:2px 7px;border-radius:20px;letter-spacing:1px}
+.opt-badge.new{background:rgba(39,174,96,.15);color:var(--green);border:1px solid rgba(39,174,96,.3)}
+.opt-badge.up{background:rgba(142,68,173,.15);color:var(--purple);border:1px solid rgba(142,68,173,.3)}
+.opt-badge.sp{background:rgba(26,188,156,.15);color:var(--teal);border:1px solid rgba(26,188,156,.3)}
+
+#gameover{position:fixed;inset:0;background:rgba(5,7,10,.94);display:none;align-items:center;justify-content:center;z-index:400;flex-direction:column;gap:12px}
+#gameover.open{display:flex}
+#gameover h1{font-family:var(--font-title);font-size:36px;color:var(--accent2);text-shadow:0 0 40px rgba(192,57,43,.6);letter-spacing:4px;animation:fl 2s infinite}
+@keyframes fl{0%,100%{opacity:1}92%{opacity:1}94%{opacity:.5}96%{opacity:1}98%{opacity:.3}}
+#gameover p{font-family:var(--font-mono);color:var(--text-dim);font-size:11px;letter-spacing:2px}
+
+#dmg-flash{position:fixed;inset:0;pointer-events:none;z-index:300;background:transparent;transition:background .08s}
+#dmg-flash.hit{background:rgba(192,57,43,.14)}
+#heal-flash{position:fixed;inset:0;pointer-events:none;z-index:300;background:transparent;transition:background .1s}
+#heal-flash.hit{background:rgba(39,174,96,.1)}
+#combo-toast{position:fixed;top:68px;left:50%;transform:translateX(-50%);font-family:var(--font-title);font-size:16px;color:var(--accent);text-shadow:0 0 20px rgba(232,160,32,.6);pointer-events:none;z-index:350;opacity:0;transition:opacity .3s;letter-spacing:2px;white-space:nowrap}
+#combo-toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="dmg-flash"></div>
+<div id="heal-flash"></div>
+<div id="combo-toast"></div>
+
+<div id="gameover">
+  <h1>BASE DESTRUÍDA</h1>
+  <p id="go-info">Sobreviveu até a wave 0</p>
+  <button class="btn btn-primary" onclick="resetGame()" style="margin-top:10px;min-width:150px">↺ &nbsp;REINICIAR</button>
+</div>
+
+<header>
+  <div class="logo">WAVE DEFENDER<span>ROGUE · GRID · DEFENSE</span></div>
+  <div class="hud-bar">
+    <div class="stat"><span class="stat-label">Wave</span><span class="stat-val" id="h-wave">1</span></div>
+    <div class="stat"><span class="stat-label">HP Base</span><span class="stat-val" id="h-hp">20</span></div>
+    <div class="stat"><span class="stat-label">HP Máx</span><span class="stat-val" id="h-maxhp" style="font-size:13px;color:var(--text-dim)">20</span></div>
+    <div class="stat"><span class="stat-label">Grid</span><span class="stat-val" id="h-grid" style="font-size:13px">3×3</span></div>
+    <div class="stat"><span class="stat-label">Combos</span><span class="stat-val" id="h-combos" style="font-size:13px;color:var(--purple)">0</span></div>
+    <span class="phase-pill idle" id="phase-pill">IDLE</span>
+  </div>
+</header>
+
+<main>
+  <div class="panel" id="grid-panel">
+    <div class="phdr">campo de defesa</div>
+    <div class="grid-area">
+      <div id="place-hint">📍 CLIQUE EM UMA CÉLULA VERDE PARA POSICIONAR</div>
+      <div id="grid"></div>
+    </div>
+  </div>
+  <div id="right-col">
+    <div class="panel" id="enemy-panel">
+      <div class="phdr">inimigos na wave</div>
+      <div id="enemy-row"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:1px">AGUARDANDO...</span></div>
+    </div>
+    <div class="panel" id="log-panel">
+      <div class="phdr">log de batalha</div>
+      <div id="log"><div class="le">// sistema inicializado</div></div>
+    </div>
+    <div class="panel" id="ctrl-panel">
+      <div class="phdr">controles</div>
+      <div class="ctrl-body">
+        <button class="btn btn-primary" id="btn-start">▶ &nbsp;INICIAR WAVE 1</button>
+        <button class="btn btn-danger" id="btn-reset" title="Reiniciar">↺</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">ESCOLHA UM BÔNUS</div>
+    <div class="modal-sub" id="modal-sub">selecione uma opção</div>
+    <div class="opt-grid" id="opt-grid"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// ESTRUTURAS
+// spd = ticks entre ataques (tick = 120ms)
+// spd:4 ≈ 0.5s | spd:10 ≈ 1.2s | spd:20 ≈ 2.4s
+// ══════════════════════════════════════════════
+const STRUCTS = {
+  // OFENSIVAS
+  archer:{name:'Arqueiro',icon:'🏹',color:'#27ae60',rgb:'39,174,96',passive:false,tags:['ranged'],
+    levels:[{atk:4,spd:4,desc:'Tiro rápido e preciso'},{atk:8,spd:3,desc:'Disparo duplo por rodada'},{atk:14,spd:2,desc:'Chuva de flechas (3 alvos)',targets:3}]},
+  mage:{name:'Mago',icon:'🧙',color:'#8e44ad',rgb:'142,68,173',passive:false,tags:['magic'],
+    levels:[{atk:9,spd:10,desc:'Projétil mágico pesado'},{atk:18,spd:8,desc:'Congela alvo (2 turnos)',freeze:2},{atk:30,spd:6,desc:'Ignora armadura + congela',freeze:3,noArmor:true}]},
+  fire:{name:'Torre Fogo',icon:'🔥',color:'#e67e22',rgb:'230,126,34',passive:false,area:true,tags:['fire'],
+    levels:[{atk:5,spd:6,desc:'Queima 1 inimigo',targets:1},{atk:8,spd:5,desc:'Queima 2 inimigos',targets:2},{atk:14,spd:4,desc:'Queima 3 + DOT',targets:3,dot:4}]},
+  catapult:{name:'Catapulta',icon:'⚙️',color:'#c0392b',rgb:'192,57,43',passive:false,area:true,tags:['heavy'],
+    levels:[{atk:18,spd:20,desc:'Projétil pesado (2 alvos)',targets:2},{atk:32,spd:17,desc:'Ricocheteante (3 alvos)',targets:3},{atk:50,spd:14,desc:'Bomba incendiária (4 alvos)',targets:4,dot:6}]},
+  cannon:{name:'Canhão',icon:'💣',color:'#7f8c8d',rgb:'127,140,141',passive:false,tags:['heavy','ranged'],
+    levels:[{atk:14,spd:12,desc:'Penetra inimigos',pierce:true},{atk:25,spd:10,desc:'Penetra 2 inimigos',pierce:true,targets:2},{atk:40,spd:8,desc:'Barragem: 3 tiros',pierce:true,targets:3}]},
+  lightning:{name:'Tesla',icon:'⚡',color:'#f1c40f',rgb:'241,196,15',passive:false,area:true,tags:['magic','electric'],
+    levels:[{atk:7,spd:8,desc:'Raio em cadeia (2 alvos)',targets:2},{atk:13,spd:6,desc:'Raio em cadeia (3 alvos)',targets:3},{atk:22,spd:5,desc:'Tempestade (todos)',targets:99}]},
+  // PASSIVAS / SUPORTE
+  library:{name:'Biblioteca',icon:'📚',color:'#2980b9',rgb:'41,128,185',passive:true,tags:['buff'],
+    levels:[{desc:'Torres adj. +1 nível efetivo'},{desc:'+1 nível + 20% dano adj.'},{desc:'Torres adj. +2 níveis efetivos'}]},
+  forge:{name:'Forja',icon:'⚒️',color:'#e67e22',rgb:'230,126,34',passive:true,tags:['buff','speed'],
+    levels:[{desc:'Torres adj. 25% mais rápidas'},{desc:'Torres adj. 40% mais rápidas'},{desc:'Torres adj. 60% mais rápidas'}]},
+  barricade:{name:'Barricada',icon:'🛡️',color:'#95a5a6',rgb:'149,165,166',passive:true,isBarricade:true,tags:['defense'],
+    levels:[{hp:35,desc:'35 HP — absorve dano da base'},{hp:70,desc:'70 HP + espinhos (3 dmg)'},{hp:110,desc:'110 HP + espinhos + regen 3/wave'}]},
+  shrine:{name:'Santuário',icon:'🏛️',color:'#1abc9c',rgb:'26,188,156',passive:true,tags:['heal'],
+    levels:[{heal:4,maxhp:0,desc:'Recupera 4 HP ao vencer wave'},{heal:7,maxhp:3,desc:'+7 HP + HP máx +3 por wave'},{heal:12,maxhp:6,desc:'+12 HP + HP máx +6 por wave'}]},
+  obelisk:{name:'Obelisco',icon:'🗿',color:'#9b59b6',rgb:'155,89,182',passive:true,tags:['buff','magic'],
+    levels:[{desc:'Torres MÁGICAS adj. +60% dano'},{desc:'Torres MÁGICAS adj. +120% dano'},{desc:'+120% dano + congela ao acertar'}]},
+  bunker:{name:'Bunker',icon:'🏰',color:'#34495e',rgb:'52,73,94',passive:true,isBarricade:true,tags:['defense','buff'],
+    levels:[{hp:25,atk:4,desc:'25 HP + torres adj. +4 atk'},{hp:50,atk:8,desc:'50 HP + torres adj. +8 atk'},{hp:80,atk:14,desc:'80 HP + torres adj. +14 atk + regen'}]},
+};
+
+// COMBOS: par de tags adjacentes → efeito
+// bonus: 'dmg'|'spd'|'heal'|'thorns'
+const COMBOS = [
+  {tags:['fire','magic'],   name:'INFERNO ARCANO',  desc:'+50% dano fogo+mago adjacentes',    bonus:'dmg',   val:0.5},
+  {tags:['electric','buff'],name:'SOBRECARGA',      desc:'Tesla adj. a Biblioteca: dobra vel.',bonus:'spd',   val:0.5},
+  {tags:['heavy','defense'],name:'FORTALEZA',       desc:'Pesadas adj. a Barricada/Bunker +35%',bonus:'dmg', val:0.35},
+  {tags:['fire','defense'], name:'MURO DE CHAMAS',  desc:'Espinhos da Barricada +8 dmg',       bonus:'thorns',val:8},
+  {tags:['ranged','buff'],  name:'PRECISÃO ARCANA', desc:'Arqueiro adj. a Biblioteca: +60% dano',bonus:'dmg',val:0.6},
+  {tags:['speed','ranged'], name:'RAJADA',          desc:'Arqueiro adj. a Forja: vel. dobrada',bonus:'spd2', val:0.5},
+  {tags:['magic','heal'],   name:'CURA MÍSTICA',    desc:'Mago adj. a Santuário: +3 HP extra/wave',bonus:'heal',val:3},
+  {tags:['electric','heavy'],name:'EXPLOSÃO ELÉTRICA',desc:'Tesla adj. a Catapulta/Canhão: +40% dano',bonus:'dmg',val:0.4},
+  {tags:['buff','heal'],    name:'HARMONIA',        desc:'Biblioteca adj. Santuário: +50% cura',bonus:'heal', val:0.5},
+];
+
+// INIMIGOS
+const ENEMIES=[
+  {name:'Goblin',  icon:'👺',hp:12, atk:2, armor:0},
+  {name:'Orc',     icon:'👹',hp:30, atk:5, armor:1},
+  {name:'Troll',   icon:'🧌',hp:70, atk:9, armor:3},
+  {name:'Dragão',  icon:'🐉',hp:150,atk:16,armor:5},
+  {name:'Lich',    icon:'💀',hp:240,atk:25,armor:7},
+  {name:'Titã',    icon:'🗿',hp:420,atk:38,armor:12},
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let G={wave:1,hp:20,maxHp:20,gridSize:3,cells:[],phase:'idle',placing:null,_starter:false,simTimer:null,activeCombos:[]};
+
+function initCells(){
+  G.cells=[];
+  for(let i=0;i<G.gridSize*G.gridSize;i++)
+    G.cells.push({struct:null,level:0,hp:null,dot:0,frozen:0});
+}
+
+function resetGame(){
+  clearInterval(G.simTimer);
+  G={wave:1,hp:20,maxHp:20,gridSize:3,cells:[],phase:'idle',placing:null,_starter:false,simTimer:null,activeCombos:[]};
+  document.getElementById('gameover').classList.remove('open');
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-start').textContent='▶  INICIAR WAVE 1';
+  initCells();renderGrid();updateHUD();renderEnemies([]);
+  document.getElementById('log').innerHTML='';
+  addLog('// sistema reiniciado','');
+  showStarterModal();
+}
+
+// ══════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════
+function addLog(msg,type=''){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className='le'+(type?' '+type:'');
+  d.textContent=msg;
+  el.insertBefore(d,el.firstChild);
+  while(el.children.length>100)el.removeChild(el.lastChild);
+}
+
+// ══════════════════════════════════════════════
+// HUD
+// ══════════════════════════════════════════════
+function updateHUD(){
+  document.getElementById('h-wave').textContent=G.wave;
+  const hpEl=document.getElementById('h-hp');
+  hpEl.textContent=G.hp;
+  hpEl.classList.toggle('hurt',G.hp<=G.maxHp*0.35);
+  document.getElementById('h-maxhp').textContent=G.maxHp;
+  document.getElementById('h-grid').textContent=`${G.gridSize}×${G.gridSize}`;
+  document.getElementById('h-combos').textContent=G.activeCombos.length;
+  const pill=document.getElementById('phase-pill');
+  const map={idle:'IDLE',wave:'WAVE',pick:'BÔNUS',place:'POSIC.'};
+  pill.textContent=map[G.phase]||'IDLE';
+  pill.className='phase-pill '+G.phase;
+  document.getElementById('place-hint').className='place-hint'+(G.phase==='place'?' visible':'');
+}
+
+// ══════════════════════════════════════════════
+// ADJACÊNCIA
+// ══════════════════════════════════════════════
+function getAdj(i){
+  const n=G.gridSize,row=Math.floor(i/n),col=i%n,a=[];
+  if(row>0)a.push(i-n);if(row<n-1)a.push(i+n);
+  if(col>0)a.push(i-1);if(col<n-1)a.push(i+1);
+  return a;
+}
+
+// ══════════════════════════════════════════════
+// COMBOS
+// ══════════════════════════════════════════════
+function detectCombos(){
+  const active=[];
+  const seen=new Set();
+  G.cells.forEach((c,i)=>{
+    if(!c.struct)return;
+    const s=STRUCTS[c.struct];
+    getAdj(i).forEach(j=>{
+      const nc=G.cells[j];
+      if(!nc||!nc.struct)return;
+      const ns=STRUCTS[nc.struct];
+      COMBOS.forEach(combo=>{
+        const hasBoth=combo.tags.every(tag=>s.tags.includes(tag)||ns.tags.includes(tag));
+        if(!hasBoth)return;
+        const key=combo.name+'|'+Math.min(i,j)+'-'+Math.max(i,j);
+        if(!seen.has(key)){seen.add(key);active.push({...combo,key,cells:[i,j]});}
+      });
+    });
+  });
+  G.activeCombos=active;
+  return active;
+}
+
+function getComboDmgBonus(idx){
+  let b=0;
+  G.activeCombos.forEach(c=>{if(c.cells.includes(idx)&&(c.bonus==='dmg'))b+=c.val;});
+  return b;
+}
+function getComboSpdBonus(idx){
+  let b=0;
+  G.activeCombos.forEach(c=>{if(c.cells.includes(idx)&&(c.bonus==='spd'||c.bonus==='spd2'))b+=c.val;});
+  return b;
+}
+function getComboHealBonus(){
+  let b=0,frac=0;
+  G.activeCombos.forEach(c=>{
+    if(c.bonus==='heal'&&Number.isInteger(c.val))b+=c.val;
+    if(c.bonus==='heal'&&c.val<1)frac+=c.val;
+  });
+  return {flat:b,frac};
+}
+function getComboThorns(){
+  let t=0;G.activeCombos.forEach(c=>{if(c.bonus==='thorns')t+=c.val;});return t;
+}
+
+function showComboToast(name){
+  const el=document.getElementById('combo-toast');
+  el.textContent='⚡ '+name;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ══════════════════════════════════════════════
+// BUFFS DE ADJACÊNCIA
+// ══════════════════════════════════════════════
+function getEffectiveLv(i){
+  const c=G.cells[i];if(!c.struct)return 0;
+  let lv=c.level;
+  getAdj(i).forEach(j=>{
+    const nc=G.cells[j];if(!nc||!nc.struct)return;
+    if(nc.struct==='library')lv+=nc.level===2?2:1;
+  });
+  return Math.min(lv,2);
+}
+
+function getForgeSpd(i,baseSpd){
+  let boost=0;
+  getAdj(i).forEach(j=>{
+    const nc=G.cells[j];if(!nc||nc.struct!=='forge')return;
+    const b=[0.25,0.4,0.6];boost=Math.max(boost,b[nc.level]||0);
+  });
+  boost+=getComboSpdBonus(i);
+  return Math.max(1,Math.round(baseSpd*(1-Math.min(boost,0.8))));
+}
+
+function getObeliskBoost(i){
+  const c=G.cells[i];if(!c.struct)return 0;
+  if(!STRUCTS[c.struct].tags.includes('magic'))return 0;
+  let m=0;
+  getAdj(i).forEach(j=>{
+    const nc=G.cells[j];if(!nc||nc.struct!=='obelisk')return;
+    const b=[0.6,1.2,1.2];m=Math.max(m,b[nc.level]||0);
+  });
+  return m;
+}
+
+function getBunkerAtk(i){
+  let b=0;
+  getAdj(i).forEach(j=>{
+    const nc=G.cells[j];if(!nc||nc.struct!=='bunker')return;
+    const bonuses=[4,8,14];b=Math.max(b,bonuses[nc.level]||0);
+  });
+  return b;
+}
+
+function getLibraryAtkBoost(i){
+  // +20% if adj library lv>=1
+  return getAdj(i).some(j=>{const nc=G.cells[j];return nc&&nc.struct==='library'&&nc.level>=1;})?0.2:0;
+}
+
+// ══════════════════════════════════════════════
+// GRID RENDER
+// ══════════════════════════════════════════════
+function renderGrid(){
+  const el=document.getElementById('grid');
+  el.style.gridTemplateColumns=`repeat(${G.gridSize},76px)`;
+  el.innerHTML='';
+  detectCombos();
+  const comboCells=new Set(G.activeCombos.flatMap(c=>c.cells));
+  G.cells.forEach((c,i)=>{
+    const div=document.createElement('div');
+    if(c.struct){
+      const s=STRUCTS[c.struct];
+      const effLv=getEffectiveLv(i);
+      const boost=effLv-c.level;
+      div.className='cell occupied'+(comboCells.has(i)?' combo-active':'');
+      div.style.setProperty('--sc',s.color);
+      div.style.setProperty('--sr',s.rgb);
+      div.title=`${s.name} Nv${c.level+1} — ${s.levels[effLv].desc}`;
+      let html=`<span class="cell-lv">NV${c.level+1}</span>`;
+      if(boost>0)html+=`<span class="cell-boost">+${boost}</span>`;
+      html+=`<span class="cell-icon">${s.icon}</span><span class="cell-name">${s.name}</span>`;
+      if((c.struct==='barricade'||c.struct==='bunker')&&c.hp!=null){
+        const mhp=STRUCTS[c.struct].levels[c.level].hp;
+        html+=`<div class="cell-hpbar"><div class="cell-hpbar-fill" style="width:${Math.max(0,c.hp/mhp*100)}%"></div></div>`;
+      }
+      div.innerHTML=html;
+    }else if(G.phase==='place'){
+      div.className='cell placeable';div.onclick=()=>placeHere(i);
+    }else{
+      div.className='cell empty';
+      div.innerHTML='<span style="font-size:8px;letter-spacing:1px">vazio</span>';
+    }
+    el.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════
+// WAVE ENEMIES
+// ══════════════════════════════════════════════
+function buildWaveEnemies(){
+  const w=G.wave;
+  const scale=1+(w-1)*0.14;
+  const tier=Math.min(Math.floor((w-1)/3),ENEMIES.length-1);
+  const prev=Math.max(0,tier-1);
+  const count=Math.min(2+Math.floor(w*0.6),12);
+  const out=[];
+  for(let i=0;i<count;i++){
+    const e=i<Math.ceil(count*0.65)?ENEMIES[tier]:ENEMIES[prev];
+    out.push({...e,
+      hp:Math.round(e.hp*scale),maxHp:Math.round(e.hp*scale),
+      atk:Math.max(1,Math.round(e.atk*scale)),
+      armor:e.armor,frozen:0,dot:0,
+      id:Math.random().toString(36).slice(2)});
+  }
+  return out;
+}
+
+function renderEnemies(list){
+  const el=document.getElementById('enemy-row');el.innerHTML='';
+  if(!list||list.length===0){el.innerHTML='<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:1px">LIMPO ✓</span>';return;}
+  list.forEach(e=>{
+    const pct=Math.max(0,e.hp/e.maxHp);
+    const d=document.createElement('div');
+    d.className='enemy'+(pct<0.3?' low-hp':'')+(e.frozen>0?' frozen':'');
+    d.title=`${e.name} HP:${Math.max(0,e.hp)}/${e.maxHp} ATK:${e.atk} ARM:${e.armor}${e.frozen>0?' ❄CONGELADO':''}${e.dot>0?' 🔥DOT:'+e.dot:''}`;
+    d.innerHTML=`${e.icon}<div class="e-hp"><div class="e-hp-f" style="width:${pct*100}%"></div></div>`;
+    el.appendChild(d);
+  });
+}
+
+// ══════════════════════════════════════════════
+// TOWERS BUILD
+// ══════════════════════════════════════════════
+function getTowers(){
+  const towers=[];
+  G.cells.forEach((c,i)=>{
+    if(!c.struct)return;
+    const s=STRUCTS[c.struct];if(s.passive)return;
+    const effLv=getEffectiveLv(i);
+    const lv={...s.levels[effLv]};
+    // Apply buffs
+    let atk=lv.atk||0;
+    let spd=lv.spd||10;
+    atk+=getBunkerAtk(i);
+    atk=Math.round(atk*(1+getObeliskBoost(i)));
+    atk=Math.round(atk*(1+getLibraryAtkBoost(i)));
+    atk=Math.round(atk*(1+getComboDmgBonus(i)));
+    spd=getForgeSpd(i,spd);
+    towers.push({...s,...lv,atk,spd,key:c.struct,effLv,idx:i});
+  });
+  return towers;
+}
+
+// ══════════════════════════════════════════════
+// WAVE SIMULATION
+// ══════════════════════════════════════════════
+function startWave(){
+  if(G.phase==='wave')return;
+  G.phase='wave';updateHUD();
+  document.getElementById('btn-start').disabled=true;
+  addLog(`⚔  WAVE ${G.wave} INICIADA`,'bad');
+  const combos=detectCombos();
+  combos.forEach(c=>{addLog(`⚡ COMBO: ${c.name}`,'spec');showComboToast(c.name);});
+
+  const enemies=buildWaveEnemies();
+  let alive=[...enemies];
+  renderEnemies(alive);
+
+  const towers=getTowers();
+  const ticks=towers.map(()=>0);
+  let gTick=0;
+
+  clearInterval(G.simTimer);
+  G.simTimer=setInterval(()=>{
+    gTick++;
+
+    // DOT every 5 ticks (~0.6s)
+    if(gTick%5===0){
+      alive.forEach(e=>{if(e.dot>0)e.hp-=e.dot;});
+      alive=alive.filter(e=>{if(e.hp<=0){addLog(`🔥 ${e.icon}${e.name} queimou!`,'good');return false;}return true;});
+      alive.forEach(e=>{if(e.frozen>0)e.frozen--;});
+    }
+
+    // Towers attack
+    towers.forEach((t,ti)=>{
+      ticks[ti]++;if(ticks[ti]<t.spd)return;ticks[ti]=0;
+      if(alive.length===0)return;
+      const count=t.area?Math.min(t.targets||1,alive.length):Math.min(t.targets||1,alive.length);
+      for(let k=0;k<count;k++){
+        const target=alive[k];if(!target)break;
+        let dmg=t.atk;
+        if(!t.noArmor)dmg=Math.max(1,dmg-(target.armor||0));
+        if(target.frozen>0)dmg=Math.round(dmg*1.5);
+        target.hp-=dmg;
+        if(t.freeze)target.frozen=t.freeze;
+        if(t.dot)target.dot=Math.max(target.dot,t.dot);
+        // Obelisk lv2 freeze on magic hit
+        if(STRUCTS[t.key]&&STRUCTS[t.key].tags.includes('magic')){
+          const adjObelisk=getAdj(t.idx).find(j=>G.cells[j]&&G.cells[j].struct==='obelisk'&&G.cells[j].level===2);
+          if(adjObelisk!==undefined&&!target.frozen)target.frozen=1;
+        }
+        addLog(`${t.icon}${t.name}→${target.icon}${target.name}(−${dmg}${target.frozen>0?'❄':''})${''}`,'' );
+      }
+      alive=alive.filter(e=>{if(e.hp<=0){addLog(`💀 ${e.icon}${e.name} abatido!`,'good');return false;}return true;});
+      renderEnemies(alive);
+    });
+
+    // Enemies attack every 10 ticks (~1.2s)
+    if(gTick%10===0&&alive.length>0){
+      const attacking=alive.filter(e=>e.frozen<=0);
+      let dmg=attacking.reduce((s,e)=>s+e.atk,0);
+
+      // Barricades/Bunkers absorb
+      for(let bi=0;bi<G.cells.length&&dmg>0;bi++){
+        const bc=G.cells[bi];
+        if((bc.struct==='barricade'||bc.struct==='bunker')&&bc.hp>0){
+          const taken=Math.min(bc.hp,dmg);
+          bc.hp-=taken;dmg-=taken;
+          addLog(`🛡 ${STRUCTS[bc.struct].name} absorveu ${taken}`,'info');
+          // Thorns
+          let thorns=0;
+          if(bc.struct==='barricade'&&bc.level>=1)thorns=3;
+          thorns+=getComboThorns();
+          if(thorns>0){
+            attacking.forEach(e=>{e.hp-=thorns;});
+            addLog(`🗡 Espinhos: ${thorns} dmg!`,'teal');
+          }
+          if(bc.hp<=0){addLog(`💥 ${STRUCTS[bc.struct].name} destruída!`,'bad');bc.struct=null;bc.level=0;bc.hp=null;}
+          alive=alive.filter(e=>{if(e.hp<=0){addLog(`💀 ${e.icon}${e.name} (espinhos)`,'good');return false;}return true;});
+          renderGrid();renderEnemies(alive);
+        }
+      }
+      if(dmg>0){
+        G.hp=Math.max(0,G.hp-dmg);
+        document.getElementById('dmg-flash').classList.add('hit');
+        setTimeout(()=>document.getElementById('dmg-flash').classList.remove('hit'),120);
+        addLog(`💥 Base sofreu ${dmg} dmg! HP:${G.hp}/${G.maxHp}`,'bad');
+        updateHUD();
+      }
+    }
+
+    if(alive.length===0){clearInterval(G.simTimer);waveWon();return;}
+    if(G.hp<=0){
+      clearInterval(G.simTimer);renderEnemies(alive);addLog('// GAME OVER','bad');
+      document.getElementById('go-info').textContent=`Sobreviveu até a wave ${G.wave} | ${G.activeCombos.length} combos ativos`;
+      setTimeout(()=>document.getElementById('gameover').classList.add('open'),800);
+    }
+  },120);
+}
+
+// ══════════════════════════════════════════════
+// WAVE WON — cura e regen
+// ══════════════════════════════════════════════
+function waveWon(){
+  addLog(`✓ WAVE ${G.wave} VENCIDA`,'good');renderEnemies([]);
+
+  // Regen barricada lv2 e bunker lv2
+  G.cells.forEach(c=>{
+    if(c.struct==='barricade'&&c.level>=2&&c.hp!=null){
+      const mhp=STRUCTS.barricade.levels[2].hp;
+      const r=3;c.hp=Math.min(mhp,(c.hp||0)+r);
+      addLog(`🛡 Barricada regenerou ${r} HP`,'teal');
+    }
+    if(c.struct==='bunker'&&c.level>=2&&c.hp!=null){
+      const mhp=STRUCTS.bunker.levels[2].hp;
+      c.hp=Math.min(mhp,(c.hp||0)+2);
+    }
+  });
+
+  // Santuário cura + HP máx
+  let totalHeal=0,totalMaxHp=0;
+  G.cells.forEach(c=>{
+    if(c.struct!=='shrine')return;
+    const lv=STRUCTS.shrine.levels[c.level];
+    totalHeal+=lv.heal||0;
+    totalMaxHp+=lv.maxhp||0;
+  });
+  // Combo cura mística (+flat) e Harmonia (+frac)
+  const {flat,frac}=getComboHealBonus();
+  totalHeal+=flat;
+  if(frac>0)totalHeal=Math.round(totalHeal*(1+frac));
+
+  if(totalMaxHp>0){G.maxHp+=totalMaxHp;addLog(`✚ HP Máximo +${totalMaxHp} → ${G.maxHp}`,'good');}
+  if(totalHeal>0){
+    G.hp=Math.min(G.maxHp,G.hp+totalHeal);
+    document.getElementById('heal-flash').classList.add('hit');
+    setTimeout(()=>document.getElementById('heal-flash').classList.remove('hit'),300);
+    addLog(`✚ Santuário curou +${totalHeal} HP (${G.hp}/${G.maxHp})`,'good');
+  }
+  updateHUD();
+  G.phase='pick';updateHUD();
+  setTimeout(showPickModal,500);
+}
+
+// ══════════════════════════════════════════════
+// PICK MODAL — 4 opções + expandir grid
+// ══════════════════════════════════════════════
+function buildPickOptions(){
+  const keys=Object.keys(STRUCTS);
+  const shuffled=[...keys].sort(()=>Math.random()-.5);
+  const picks=[];
+  for(const k of shuffled){
+    if(picks.length>=3)break;
+    const owned=G.cells.find(c=>c.struct===k);
+    if(owned&&owned.level>=2)continue;
+    picks.push({key:k,upgrade:!!owned,curLevel:owned?owned.level:-1});
+  }
+  while(picks.length<3){
+    const fb=shuffled.find(k=>!picks.find(p=>p.key===k));
+    if(!fb)break;
+    picks.push({key:fb,upgrade:false,curLevel:-1});
+  }
+  picks.push({key:'__expand__',expand:true});
+  return picks;
+}
+
+function showPickModal(){
+  const opts=buildPickOptions();
+  document.getElementById('modal-title').textContent=`WAVE ${G.wave} — ESCOLHA SEU BÔNUS`;
+  document.getElementById('modal-sub').textContent='escolha uma estrutura, evolução ou ação especial';
+  const grid=document.getElementById('opt-grid');grid.innerHTML='';
+  opts.forEach(o=>{
+    const card=document.createElement('div');
+    card.className='opt-card';
+    if(o.expand){
+      const canExpand=G.gridSize<5;
+      card.style.setProperty('--cc','#1abc9c');
+      if(!canExpand)card.classList.add('disabled');
+      card.innerHTML=`<div class="opt-icon">🗺️</div>
+        <div class="opt-name">Expandir Grid</div>
+        <div class="opt-desc">${canExpand?`${G.gridSize}×${G.gridSize} → ${G.gridSize+1}×${G.gridSize+1}<br>Novos espaços sem mover estruturas`:'Grid no máximo (5×5)'}</div>
+        <span class="opt-badge sp">${canExpand?'✦ EXPANDIR':'✗ MÁXIMO'}</span>`;
+      if(canExpand)card.onclick=()=>doExpandGrid();
+    }else{
+      const s=STRUCTS[o.key];
+      const nextLv=o.upgrade?o.curLevel+1:0;
+      const lvInfo=s.levels[Math.min(nextLv,2)];
+      card.style.setProperty('--cc',s.color);
+      card.innerHTML=`<div class="opt-icon">${s.icon}</div>
+        <div class="opt-name">${s.name}</div>
+        <div class="opt-desc">${lvInfo.desc}</div>
+        <span class="opt-badge ${o.upgrade?'up':'new'}">${o.upgrade?'▲ NV'+(nextLv+1):'✦ NOVO'}</span>`;
+      card.onclick=()=>pickChosen(o);
+    }
+    grid.appendChild(card);
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function doExpandGrid(){
+  document.getElementById('modal-overlay').classList.remove('open');
+  const oldN=G.gridSize,newN=oldN+1;
+  // Preserva posições — não mexe em nada existente
+  const newCells=[];
+  for(let row=0;row<newN;row++){
+    for(let col=0;col<newN;col++){
+      if(row<oldN&&col<oldN)newCells.push(G.cells[row*oldN+col]);
+      else newCells.push({struct:null,level:0,hp:null,dot:0,frozen:0});
+    }
+  }
+  G.gridSize=newN;G.cells=newCells;
+  addLog(`🗺 Grid expandido: ${newN}×${newN}`,'good');
+  advanceWave();
+}
+
+function pickChosen(o){
+  document.getElementById('modal-overlay').classList.remove('open');
+  const s=STRUCTS[o.key];
+  if(o.upgrade){
+    const cell=G.cells.find(c=>c.struct===o.key);
+    if(cell){
+      cell.level=Math.min(cell.level+1,2);
+      if(o.key==='barricade'||o.key==='bunker')cell.hp=STRUCTS[o.key].levels[cell.level].hp;
+      addLog(`▲ ${s.icon}${s.name} → NV${cell.level+1}`,'spec');
+    }
+    advanceWave();
+  }else{
+    const hasEmpty=G.cells.some(c=>!c.struct);
+    if(!hasEmpty){addLog('// grid cheio — expanda ou upe estruturas','info');showPickModal();return;}
+    G.placing=o.key;G.phase='place';updateHUD();renderGrid();
+    addLog(`📍 Posicione ${s.icon}${s.name} no grid`,'info');
+  }
+}
+
+function placeHere(i){
+  if(G.phase!=='place'||G.placing===null)return;
+  const c=G.cells[i];if(c.struct)return;
+  const s=STRUCTS[G.placing];
+  c.struct=G.placing;c.level=0;c.hp=null;c.dot=0;c.frozen=0;
+  if(G.placing==='barricade'||G.placing==='bunker')c.hp=s.levels[0].hp;
+  addLog(`✓ ${s.icon}${s.name} posicionada!`,'good');
+  G.placing=null;
+  const combos=detectCombos();
+  combos.forEach(co=>{addLog(`⚡ COMBO: ${co.name}`,'spec');showComboToast(co.name);});
+  if(G._starter){G._starter=false;G.phase='idle';updateHUD();renderGrid();}
+  else advanceWave();
+}
+
+function advanceWave(){
+  G.wave++;G.phase='idle';updateHUD();renderGrid();
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-start').textContent=`▶  INICIAR WAVE ${G.wave}`;
+}
+
+// ══════════════════════════════════════════════
+// STARTER
+// ══════════════════════════════════════════════
+function showStarterModal(){
+  const starterKeys=['archer','mage','fire','cannon','lightning','catapult'];
+  const shuffled=[...starterKeys].sort(()=>Math.random()-.5).slice(0,4);
+  document.getElementById('modal-title').textContent='ESCOLHA SUA TORRE INICIAL';
+  document.getElementById('modal-sub').textContent='esta será sua primeira estrutura de defesa';
+  const grid=document.getElementById('opt-grid');grid.innerHTML='';
+  shuffled.forEach(key=>{
+    const s=STRUCTS[key];
+    const card=document.createElement('div');
+    card.className='opt-card';
+    card.style.setProperty('--cc',s.color);
+    card.innerHTML=`<div class="opt-icon">${s.icon}</div><div class="opt-name">${s.name}</div><div class="opt-desc">${s.levels[0].desc}</div><span class="opt-badge new">✦ INICIAL</span>`;
+    card.onclick=()=>{
+      document.getElementById('modal-overlay').classList.remove('open');
+      G.placing=key;G.phase='place';G._starter=true;
+      updateHUD();renderGrid();
+      addLog(`📍 Posicione ${s.icon}${s.name} no grid`,'info');
+    };
+    grid.appendChild(card);
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+// BOOTSTRAP
+document.getElementById('btn-start').onclick=startWave;
+document.getElementById('btn-reset').onclick=resetGame;
+initCells();renderGrid();updateHUD();showStarterModal();
+</script>
+</body>
+</html>
