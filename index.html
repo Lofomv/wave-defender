@@ -9,6 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
     
+    <meta property="og:title" content="Wave Defender">
+    <meta property="og:description" content="Grid Strategy defense game">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://wavedefender.domain/">
     <link rel="stylesheet" href="style.css">
     <meta name="description" content="Wave Defender: Jogo de defesa em grid com combos estratégicos, guerreiros e sinergias visuais.">
 </head>
@@ -42,16 +46,50 @@
                 <span class="hud-label">ABATES</span>
                 <span class="hud-value" id="h-kills" style="color:var(--accent2)">0</span>
             </div>
+            <div class="hud-item" title="Souls (roguelike)">
+                <span class="hud-label" style="color:#bbb">🟠 SOULS</span>
+                <span class="hud-value" id="h-souls" style="color:#ddd;">0</span>
+            </div>
             <div class="hud-item">
                 <span class="hud-label">BASE HP</span>
                 <div class="header-hp-bar" id="header-hp-container">
                     <div class="header-hp-fill" id="h-hp-fill"></div>
                     <span class="header-hp-text"><span id="h-hp">30</span>/<span id="h-maxhp">30</span></span>
                 </div>
+                </div>
             </div>
             <div class="badge badge-phase-idle" id="phase-badge">PREPARAÇÃO</div>
         </div>
     </header>
+
+    <!-- SIDEBAR HUD -->
+    <nav class="sidebar-hud">
+        <button class="hud-btn" onclick="openCodex()">
+            <span class="icon">📖</span>
+            <span class="tooltip">Codex</span>
+        </button>
+        <button class="hud-btn" id="btn-shop" onclick="openShop()">
+            <span class="icon">🛒</span>
+            <span class="tooltip">Mercado</span>
+        </button>
+        <button class="hud-btn btn-soul-hud" onclick="openSoulShop()">
+            <span class="icon">🟠</span>
+            <span class="tooltip">Souls</span>
+        </button>
+        <button class="hud-btn btn-library-hud" onclick="openLibrary()">
+            <span class="icon">📚</span>
+            <span class="tooltip">Biblioteca</span>
+        </button>
+        <div class="leitoril-slot empty" id="h-leitoril-slot" title="Leitoril: Livro ativo da Run" onclick="openLibrary()">
+            <span class="icon" id="h-leitoril-icon"></span>
+        </div>
+    </nav>
+
+    <!-- BOTTOM COMMAND HUD -->
+    <div class="bottom-hud">
+        <button class="btn btn-start-huge" id="btn-start" onclick="startWave()">▶ WAVE 1</button>
+        <button class="btn btn-danger-huge" onclick="confirmReset()">🔄 RESETAR</button>
+    </div>
 
     <main>
         <div class="panel" id="main-viewport">
@@ -72,16 +110,6 @@
                 <div class="panel-header">Log de Combate</div>
                 <div id="battle-log"></div>
             </section>
-
-            <section class="panel" id="ctrl-panel">
-                <div class="panel-header">Comando</div>
-                <div class="control-panel">
-                    <button class="btn btn-codex-ctrl" id="btn-codex-single" onclick="openCodex()" title="Codex — Bestiário, Estruturas & Combos">📖</button>
-                    <button class="btn btn-shop" id="btn-shop" onclick="openShop()" title="Mercado">🛒 MERCADO</button>
-                    <button class="btn" id="btn-start" onclick="startWave()">▶ INICIAR WAVE</button>
-                    <button class="btn btn-danger" id="btn-reset" onclick="resetGame()" title="Reiniciar">↺</button>
-                </div>
-            </section>
         </aside>
     </main>
 
@@ -99,7 +127,12 @@
         <div class="shop-modal">
             <div class="shop-header">
                 <h2 class="modal-title" style="margin:0; text-align:left;">MERCADO DINÂMICO</h2>
-                <div class="shop-coins">🪙 <span id="shop-coins-val">0</span></div>
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <button id="btn-reroll" class="btn btn-reroll" onclick="rerollShop()" title="Trocar itens do mercado">
+                        🔄 <span id="reroll-cost-val">5</span>🪙
+                    </button>
+                    <div class="shop-coins">🪙 <span id="shop-coins-val">0</span></div>
+                </div>
                 <button class="btn-close" onclick="closeShop()">✕</button>
             </div>
             
@@ -144,9 +177,47 @@
 
     <!-- Game Over -->
     <div id="game-over">
-        <h1>MISSÃO FRACASSADA</h1>
+        <h2 class="go-title">MISSÃO FRACASSADA</h2>
         <p id="go-stats">Wave: 1 | Abates: 0 | Recorde: 1</p>
         <button class="btn go-btn" onclick="resetGame()">↺ REINICIAR</button>
+    </div>
+
+    <!-- Soul Shop Modal -->
+    <div class="modal-overlay" id="soul-overlay">
+        <div class="shop-modal soul-shop-modal">
+            <div class="shop-header">
+                <h2 class="modal-title" style="margin:0; text-align:left;">🟠 SOUL FORGE</h2>
+                <div class="shop-coins" style="border-color:rgba(200,200,200,0.3);color:#ddd;">🟠 <span id="soul-total">0</span></div>
+                <button class="btn-close" onclick="closeSoulShop()">✕</button>
+            </div>
+            <p class="modal-subtitle" style="text-align:left;margin-top:-10px;">Upgrades permanentes entre partidas. Derrote inimigos ⚪ para obter Souls.</p>
+            <div class="option-grid" id="soul-grid"></div>
+        </div>
+    </div>
+
+    <!-- Library Modal -->
+    <div class="modal-overlay" id="library-overlay">
+        <div class="shop-modal library-modal">
+            <div class="shop-header">
+                <h2 class="modal-title" style="margin:0; text-align:left;">📚 BIBLIOTECA</h2>
+                <div class="shop-coins" style="border-color:rgba(200,200,200,0.3);color:#ddd;">🟠 <span id="lib-soul-total">0</span></div>
+                <button class="btn-close" onclick="closeLibrary()">✕</button>
+            </div>
+            <p class="modal-subtitle" style="text-align:left;margin-top:-10px;">Buffs para UMA run. Comprado com Souls. Apenas UM livro por run.</p>
+            <div id="library-grid"></div>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div class="modal-overlay confirm-overlay" id="confirm-reset-overlay">
+        <div class="modal confirm-modal">
+            <h2 class="modal-title" style="color:var(--red);">⚠️ ATENÇÃO</h2>
+            <p class="modal-subtitle">Tem certeza que deseja reiniciar a run atual? Todo o progresso será perdido, incluindo o livro ativo.</p>
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button class="btn" style="flex:1" onclick="closeConfirmReset()">CANCELAR</button>
+                <button class="btn btn-danger" style="flex:1" onclick="executeReset()">CONFIRMAR</button>
+            </div>
+        </div>
     </div>
 
     <script src="game.js"></script>
