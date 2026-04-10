@@ -50,14 +50,6 @@
                 <span class="hud-label" style="color:#bbb">🟠 SOULS</span>
                 <span class="hud-value" id="h-souls" style="color:#ddd;">0</span>
             </div>
-            <div class="hud-item">
-                <span class="hud-label">BASE HP</span>
-                <div class="header-hp-bar" id="header-hp-container">
-                    <div class="header-hp-fill" id="h-hp-fill"></div>
-                    <span class="header-hp-text"><span id="h-hp">30</span>/<span id="h-maxhp">30</span></span>
-                </div>
-                </div>
-            </div>
             <div class="badge badge-phase-idle" id="phase-badge">PREPARAÇÃO</div>
         </div>
     </header>
@@ -85,10 +77,13 @@
         </div>
     </nav>
 
-    <!-- BOTTOM COMMAND HUD -->
     <div class="bottom-hud">
         <button class="btn btn-start-huge" id="btn-start" onclick="startWave()">▶ WAVE 1</button>
-        <button class="btn btn-danger-huge" onclick="confirmReset()">🔄 RESETAR</button>
+        <div class="header-hp-bar" id="header-hp-container" title="Sua Vida">
+            <div class="header-hp-fill" id="h-hp-fill"></div>
+            <span class="header-hp-text">VIDA: <span id="h-hp">30</span>/<span id="h-maxhp">30</span></span>
+        </div>
+        <button class="btn btn-danger-huge" onclick="confirmReset()" title="Resetar Run">🔄</button>
     </div>
 
     <main>
@@ -179,7 +174,9 @@
     <div id="game-over">
         <h2 class="go-title">MISSÃO FRACASSADA</h2>
         <p id="go-stats">Wave: 1 | Abates: 0 | Recorde: 1</p>
-        <button class="btn go-btn" onclick="resetGame()">↺ REINICIAR</button>
+        <div class="go-buttons">
+            <button class="btn go-btn" onclick="resetGame()">↺ REINICIAR</button>
+        </div>
     </div>
 
     <!-- Soul Shop Modal -->
