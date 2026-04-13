@@ -14,6 +14,9 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://wavedefender.domain/">
     <link rel="stylesheet" href="style.css">
+    <style>
+        #connection-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+    </style>
     <meta name="description" content="Wave Defender: Jogo de defesa em grid com combos estratégicos, guerreiros e sinergias visuais.">
 </head>
 <body>
@@ -22,34 +25,38 @@
     <div id="flash-green" class="flash-effect flash-green"></div>
     <div id="toast">COMBO ATIVADO!</div>
     <div id="particles-container"></div>
+    <canvas id="connection-canvas"></canvas>
 
     <header>
-        <div class="logo-container">
+        <div class="logo-group">
             <h1 class="logo">WAVE DEFENDER</h1>
             <span class="logo-sub">ROGUE · GRID · DEFENSE</span>
         </div>
 
-        <div class="hud-group">
-            <div class="hud-item" title="Moedas">
-                <span class="hud-label" style="color:var(--gold)">🪙 CRÉDITOS</span>
-                <span class="hud-value" id="h-coins" style="color:var(--gold);text-shadow:0 0 10px rgba(241,196,15,0.4)">0</span>
+        <div class="top-hud">
+            <div class="currency-group">
+                <div class="hud-mini-item" title="Créditos">
+                    <span class="hud-icon">🪙</span>
+                    <span class="hud-val" id="h-coins">0</span>
+                </div>
+                <div class="hud-divider"></div>
+                <div class="hud-mini-item" title="Souls">
+                    <span class="hud-icon">🟠</span>
+                    <span class="hud-val" id="h-souls">0</span>
+                </div>
             </div>
-            <div class="hud-item" title="Maior wave alcançada">
-                <span class="hud-label" style="color:var(--text-dim)">⭐ RECORDE</span>
-                <span class="hud-value" id="h-record" style="color:var(--text-dim);">1</span>
+            
+            <div class="stats-group">
+                <div class="stat-mini" title="Abates">
+                    <span class="stat-icon">💀</span>
+                    <span id="h-kills">0</span>
+                </div>
+                <div class="stat-mini" title="Recorde">
+                    <span class="stat-icon">⭐</span>
+                    <span id="h-record">1</span>
+                </div>
             </div>
-            <div class="hud-item">
-                <span class="hud-label">WAVE</span>
-                <span class="hud-value" id="h-wave">1</span>
-            </div>
-            <div class="hud-item">
-                <span class="hud-label">ABATES</span>
-                <span class="hud-value" id="h-kills" style="color:var(--accent2)">0</span>
-            </div>
-            <div class="hud-item" title="Souls (roguelike)">
-                <span class="hud-label" style="color:#bbb">🟠 SOULS</span>
-                <span class="hud-value" id="h-souls" style="color:#ddd;">0</span>
-            </div>
+
             <div class="badge badge-phase-idle" id="phase-badge">PREPARAÇÃO</div>
         </div>
     </header>
@@ -96,13 +103,26 @@
         </div>
 
         <aside class="side-panels">
+            <section class="panel" id="wave-panel">
+                <div class="wave-tracker-header">
+                    <div class="wave-info">
+                        <span class="wave-label">SETOR</span>
+                        <span class="wave-number" id="h-wave">1</span>
+                    </div>
+                    <div class="wave-progress-container">
+                        <div class="wave-progress-bar" id="wave-progress-fill"></div>
+                        <span class="wave-progress-text" id="wave-progress-text">ESPERANDO INÍCIO</span>
+                    </div>
+                </div>
+            </section>
+
             <section class="panel" id="enemy-panel">
-                <div class="panel-header">Rastreador de Hostis</div>
+                <div class="panel-header">Hostis Detectados</div>
                 <div class="enemy-list" id="enemy-list"></div>
             </section>
 
             <section class="panel" id="log-panel">
-                <div class="panel-header">Log de Combate</div>
+                <div class="panel-header">COMMS</div>
                 <div id="battle-log"></div>
             </section>
         </aside>
@@ -119,26 +139,26 @@
 
     <!-- Shop Modal -->
     <div class="modal-overlay" id="shop-overlay">
-        <div class="shop-modal">
-            <div class="shop-header">
-                <h2 class="modal-title" style="margin:0; text-align:left;">MERCADO DINÂMICO</h2>
-                <div style="display:flex; gap:15px; align-items:center;">
-                    <button id="btn-reroll" class="btn btn-reroll" onclick="rerollShop()" title="Trocar itens do mercado">
-                        🔄 <span id="reroll-cost-val">5</span>🪙
-                    </button>
-                    <div class="shop-coins">🪙 <span id="shop-coins-val">0</span></div>
+        <div class="shop-modal premium-modal">
+            <div class="premium-header">
+                <h2 class="modal-title">MERCADO</h2>
+                <div class="header-actions">
+                    <div class="currency-pill gold">🪙 <span id="shop-coins-val">0</span></div>
+                    <div class="currency-pill shop-reroll-container">
+                        <span>🔃 <span id="reroll-cost-val">5</span></span>
+                        <button class="btn btn-reroll" onclick="rerollShop()" id="reroll-btn">REFRESH</button>
+                    </div>
                 </div>
                 <button class="btn-close" onclick="closeShop()">✕</button>
             </div>
             
             <div class="shop-sections">
                 <div class="shop-section">
-                    <h3 class="section-title">SUPLY BASE (Comuns)</h3>
                     <div class="option-grid" id="shop-grid-normal"></div>
                 </div>
                 
                 <div class="shop-section" id="black-market-section" style="display:none;">
-                    <h3 class="section-title bm-title">☠️ MERCADO NEGRO (Alto Risco)</h3>
+                    <h3 class="section-title bm-title">MERCADO NEGRO</h3>
                     <div class="option-grid" id="shop-grid-black"></div>
                 </div>
             </div>
@@ -147,8 +167,8 @@
 
     <!-- Codex Modal (Bestiário + Catálogo + Combos) -->
     <div class="modal-overlay codex-overlay" id="codex-overlay">
-        <div class="codex-modal">
-            <div class="codex-header">
+        <div class="codex-modal premium-modal">
+            <div class="codex-header premium-header">
                 <h2 class="modal-title codex-title">📖 CODEX</h2>
                 <div class="codex-tabs">
                     <button class="codex-tab active" data-tab="bestiary" onclick="switchCodexTab('bestiary')">
@@ -179,29 +199,47 @@
         </div>
     </div>
 
-    <!-- Soul Shop Modal -->
+    <!-- Soul Forge Modal -->
     <div class="modal-overlay" id="soul-overlay">
-        <div class="shop-modal soul-shop-modal">
-            <div class="shop-header">
-                <h2 class="modal-title" style="margin:0; text-align:left;">🟠 SOUL FORGE</h2>
-                <div class="shop-coins" style="border-color:rgba(200,200,200,0.3);color:#ddd;">🟠 <span id="soul-total">0</span></div>
+        <div class="soul-shop-modal premium-modal">
+            <div class="premium-header">
+                <h2 class="modal-title">🟠 SOUL FORGE</h2>
+                <div class="currency-pill">🟠 <span id="soul-total">0</span></div>
                 <button class="btn-close" onclick="closeSoulShop()">✕</button>
             </div>
-            <p class="modal-subtitle" style="text-align:left;margin-top:-10px;">Upgrades permanentes entre partidas. Derrote inimigos ⚪ para obter Souls.</p>
             <div class="option-grid" id="soul-grid"></div>
         </div>
     </div>
 
     <!-- Library Modal -->
     <div class="modal-overlay" id="library-overlay">
-        <div class="shop-modal library-modal">
-            <div class="shop-header">
-                <h2 class="modal-title" style="margin:0; text-align:left;">📚 BIBLIOTECA</h2>
-                <div class="shop-coins" style="border-color:rgba(200,200,200,0.3);color:#ddd;">🟠 <span id="lib-soul-total">0</span></div>
+        <div class="library-modal premium-modal">
+            <div class="premium-header">
+                <h2 class="modal-title">📚 BIBLIOTECA</h2>
+                <div class="currency-pill">🟠 <span id="lib-soul-total">0</span></div>
                 <button class="btn-close" onclick="closeLibrary()">✕</button>
             </div>
-            <p class="modal-subtitle" style="text-align:left;margin-top:-10px;">Buffs para UMA run. Comprado com Souls. Apenas UM livro por run.</p>
+            <p class="modal-subtitle">Livros concedem buffs globais para uma única run. Escolha com sabedoria.</p>
             <div id="library-grid"></div>
+        </div>
+    </div>
+
+    <!-- Selection HUD (Floating) -->
+    <div id="selection-hud" class="selection-hud">
+        <div class="sel-close" onclick="cancelPlacement()">✕</div>
+        <div class="sel-main">
+            <div class="sel-icon" id="sel-icon">🏹</div>
+            <div class="sel-info">
+                <div class="sel-name" id="sel-name">ARQUEIRO</div>
+                <div class="sel-desc" id="sel-desc">Tiro rápido à distância</div>
+            </div>
+        </div>
+        <div class="sel-stats" id="sel-stats">
+            <!-- Stats will be injected here -->
+        </div>
+        <div class="sel-footer">
+            <div class="sel-cost">🪙 <span id="sel-cost">15</span></div>
+            <button class="btn btn-sel-cancel" onclick="cancelPlacement()">CANCELAR</button>
         </div>
     </div>
 
@@ -209,12 +247,20 @@
     <div class="modal-overlay confirm-overlay" id="confirm-reset-overlay">
         <div class="modal confirm-modal">
             <h2 class="modal-title" style="color:var(--red);">⚠️ ATENÇÃO</h2>
-            <p class="modal-subtitle">Tem certeza que deseja reiniciar a run atual? Todo o progresso será perdido, incluindo o livro ativo.</p>
+            <p class="modal-subtitle">Reiniciar run? Todo o progresso atual será perdido.</p>
             <div style="display:flex;gap:10px;margin-top:20px;">
                 <button class="btn" style="flex:1" onclick="closeConfirmReset()">CANCELAR</button>
                 <button class="btn btn-danger" style="flex:1" onclick="executeReset()">CONFIRMAR</button>
             </div>
         </div>
+    </div>
+
+    <!-- Floating Sell Action -->
+    <div id="floating-sell-btn" class="floating-sell-action" style="display:none;">
+        <button id="btn-sell-confirm-fast">
+            <span class="sell-lbl">VENDER</span>
+            <span class="sell-val" id="sell-price-fast">5🪙</span>
+        </button>
     </div>
 
     <script src="game.js"></script>
