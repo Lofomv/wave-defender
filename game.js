@@ -1,11 +1,25 @@
 /**
- * WAVE DEFENDER - GAME ENGINE V7 (STABLE BASELINE)
- * Reconstrução total para estabilidade pós-truncagem.
+ * WAVE DEFENDER - GAME ENGINE V8 (STABLE BASELINE)
+ * Reconstrução total para estabilidade pós-truncagem e balanceamento final.
  */
 
 // ══════════════════════════════════════════════
 // CONSTANTS & DATABASE
 // ══════════════════════════════════════════════
+
+// 💡 TEMPLATE PARA NOVA TROPA:
+/*
+    nova_unidade: { 
+        name: 'Nome', icon: '❓', color: '#hex', rgb: 'r, g, b', type: 'physical|magical|support',
+        isWarrior: true, // OBRIGATÓRIO se tiver vida (exceto Muralha)
+        isBarricade: false, 
+        tags: ['warrior', '...'], // Tag 'warrior' é OBRIGATÓRIA se tiver vida
+        levels: [
+            { hp: 100, atk: 20, spd: 5, desc: 'Nível 1' },
+            // ...
+        ]
+    },
+*/
 
 const STRUCTS = {
     archer: {
@@ -14,8 +28,8 @@ const STRUCTS = {
         levels: [
             { atk: 8, spd: 4, desc: 'Tiro rápido' },
             { atk: 16, spd: 4, desc: 'Tiro duplo', targets: 2 },
-            { atk: 26, spd: 3, desc: 'Chuva de flechas (3 alvos)', targets: 3 },
-            { atk: 40, spd: 2, desc: 'Rajada (5 alvos)', targets: 5 }
+            { atk: 26, spd: 3, desc: 'Chuva de flechas - 3 alvos', targets: 3 },
+            { atk: 40, spd: 2, desc: 'Rajada - 5 alvos', targets: 5 }
         ]
     },
     sniper: {
@@ -24,18 +38,18 @@ const STRUCTS = {
         levels: [
             { atk: 25, spd: 12, desc: 'Foca no mais forte', focusStrongest: true },
             { atk: 45, spd: 10, desc: 'Perfura 50% armadura', focusStrongest: true, armorPen: 0.5 },
-            { atk: 80, spd: 8, desc: 'Execução: 1.5x HP<30%', focusStrongest: true, execute: 0.3 },
-            { atk: 130, spd: 7, desc: 'Headshot <15%', focusStrongest: true, armorPen: 0.8, execute: 0.3, instakill: 0.15 }
+            { atk: 80, spd: 8, desc: 'Execução: 1.5x HP 30%', focusStrongest: true, execute: 0.3 },
+            { atk: 130, spd: 7, desc: 'Headshot 15%', focusStrongest: true, armorPen: 0.8, execute: 0.3, instakill: 0.15 }
         ]
     },
     barricade: {
         name: 'Muralha', icon: '🛡️', color: '#7f8c8d', rgb: '127, 140, 141', type: 'physical',
         passive: true, isBarricade: true, tags: ['defense', 'heavy', 'physical'],
         levels: [
-            { hp: 70, thorns: 0, desc: 'Absorve 70 de dano' },
-            { hp: 180, thorns: 8, desc: '180 HP + Espinhos(8)' },
-            { hp: 350, thorns: 18, regen: 20, desc: '350 HP + Espinhos + Regen' },
-            { hp: 700, thorns: 45, regen: 40, desc: 'Bastião Intransponível' }
+            { hp: 110, thorns: 0, desc: 'Absorve 110 de dano' },
+            { hp: 260, thorns: 10, desc: '260 HP + Espinhos 10' },
+            { hp: 580, thorns: 25, regen: 30, desc: '580 HP + Espinhos + Regen' },
+            { hp: 1100, thorns: 60, regen: 60, desc: 'Bastião Intransponível' }
         ]
     },
     forge: {
@@ -44,8 +58,8 @@ const STRUCTS = {
         levels: [
             { desc: 'Torres adj. +25% vel.', spdBuff: 0.25 },
             { desc: '+40% vel.', spdBuff: 0.40 },
-            { desc: '+40% vel. + 15% dano', spdBuff: 0.40, atkBuff: 0.15 },
-            { desc: '+60% vel. +30% dano', spdBuff: 0.60, atkBuff: 0.30 }
+            { desc: '+40% vel. + 20% dano', spdBuff: 0.40, atkBuff: 0.20 },
+            { desc: '+70% vel. +35% dano', spdBuff: 0.70, atkBuff: 0.35 }
         ]
     },
     mage: {
@@ -53,7 +67,7 @@ const STRUCTS = {
         tags: ['magic', 'elemental'],
         levels: [
             { atk: 12, spd: 10, desc: 'Projétil arcano' },
-            { atk: 22, spd: 8, desc: 'Congela (2 turnos)', freeze: 2 },
+            { atk: 22, spd: 8, desc: 'Congela 2 turnos', freeze: 2 },
             { atk: 40, spd: 6, desc: 'Ignora armadura + congela', freeze: 3, noArmor: true },
             { atk: 65, spd: 5, desc: 'Vórtice Arcano', freeze: 4, noArmor: true }
         ]
@@ -72,8 +86,8 @@ const STRUCTS = {
         name: 'Tesla', icon: '⚡', color: '#f1c40f', rgb: '241, 196, 15', type: 'magical',
         tags: ['magic', 'electric'],
         levels: [
-            { atk: 8, spd: 8, desc: 'Raio cadeia (2)', targets: 2 },
-            { atk: 15, spd: 7, desc: 'Raio cadeia (3)', targets: 3 },
+            { atk: 8, spd: 8, desc: 'Raio cadeia 2', targets: 2 },
+            { atk: 15, spd: 7, desc: 'Raio cadeia 3', targets: 3 },
             { atk: 25, spd: 6, desc: 'Tempestade (todos)', targets: 99 },
             { atk: 45, spd: 5, desc: 'Plasma', targets: 99 }
         ]
@@ -114,8 +128,8 @@ const STRUCTS = {
         levels: [
             { desc: 'Mágicas adj. +30% dano', boostMagical: 0.3 },
             { desc: '+60% dano mágico', boostMagical: 0.6 },
-            { desc: '+60% + Congela', boostMagical: 0.6, freezeAura: true },
-            { desc: '+120% dano mágico', boostMagical: 1.2, freezeAura: true }
+            { desc: '+80% dano + Congela', boostMagical: 0.8, freezeAura: true },
+            { desc: '+150% dano mágico', boostMagical: 1.5, freezeAura: true }
         ]
     },
     cofre: {
@@ -134,38 +148,48 @@ const STRUCTS = {
         levels: [
             { desc: 'Físicas adj. +25% dano', physDmgBuff: 0.25 },
             { desc: '+45% dano físico', physDmgBuff: 0.45 },
-            { desc: '+45% dano + 20% vel.', physDmgBuff: 0.45, physSpdBuff: 0.20 },
-            { desc: '+80% dano + 40% vel.', physDmgBuff: 0.80, physSpdBuff: 0.40 }
+            { desc: '+50% dano + 25% vel.', physDmgBuff: 0.50, physSpdBuff: 0.25 },
+            { desc: '+100% dano + 50% vel.', physDmgBuff: 1.00, physSpdBuff: 0.50 }
         ]
     },
     espadachim: {
         name: 'Espadachim', icon: '⚔️', color: '#c0392b', rgb: '192, 57, 43', type: 'physical',
         isWarrior: true, tags: ['warrior', 'melee', 'physical'],
         levels: [
-            { hp: 60, atk: 12, spd: 8, selfHeal: 0.10, desc: 'Linha de frente básica' },
-            { hp: 110, atk: 20, spd: 7, selfHeal: 0.12, desc: 'Golpe forte' },
-            { hp: 180, atk: 32, spd: 6, selfHeal: 0.15, desc: 'Lâmina afiada' },
-            { hp: 280, atk: 50, spd: 5, selfHeal: 0.20, desc: 'Lâmina Imortal', critChance: 0.2 }
+            { hp: 26, atk: 5, spd: 10, selfHeal: 0, desc: 'Recruta de infantaria' },
+            { hp: 55, atk: 10, spd: 8, selfHeal: 0, desc: 'Soldado treinado' },
+            { hp: 120, atk: 22, spd: 6, selfHeal: 0.10, desc: 'Veterano de guerra' },
+            { hp: 280, atk: 35, spd: 5, selfHeal: 0.15, desc: 'General Imortal', critChance: 0.2 }
+        ]
+    },
+    inquisidor: {
+        name: 'Inquisidor', icon: '✝️', color: '#f1c40f', rgb: '241, 196, 15', type: 'magical',
+        isWarrior: true, tags: ['warrior', 'magic', 'holy'],
+        levels: [
+            { hp: 30, atk: 15, spd: 7, desc: 'Dano mágico veloz' },
+            { hp: 65, atk: 25, spd: 6, desc: 'Lâmina Santificada' },
+            { hp: 140, atk: 45, spd: 5, desc: 'Purificação' },
+            { hp: 300, atk: 75, spd: 4, desc: 'Grão-Mestre', critChance: 0.15 }
         ]
     },
     bruxo: {
         name: 'Bruxo', icon: '🪄', color: '#6c3483', rgb: '108, 52, 131', type: 'magical',
         isWarrior: true, tags: ['warrior', 'debuff', 'magic'],
         levels: [
-            { hp: 50, atk: 5, spd: 10, debuffTargets: 1, atkReduce: 0.15, desc: 'Enfraquece 1 (-15% ATK)' },
-            { hp: 80, atk: 9, spd: 9, debuffTargets: 2, atkReduce: 0.20, desc: '-20% ATK em 2 alvos' },
-            { hp: 120, atk: 14, spd: 8, debuffTargets: 3, atkReduce: 0.25, armorReduce: 0.15, desc: '-25% ATK -15% ARM (3)' },
-            { hp: 180, atk: 22, spd: 7, debuffTargets: 5, atkReduce: 0.35, armorReduce: 0.25, desc: 'Maldição em Massa' }
+            { hp: 35, atk: 4, spd: 10, debuffTargets: 1, atkReduce: 0.15, desc: 'Enfraquece - 15% ATK' },
+            { hp: 70, atk: 7, spd: 9, debuffTargets: 2, atkReduce: 0.20, desc: 'Fraqueza em 2 alvos' },
+            { hp: 135, atk: 12, spd: 8, debuffTargets: 3, atkReduce: 0.25, armorReduce: 0.15, desc: '-25% ATK -15% ARM (3)' },
+            { hp: 260, atk: 20, spd: 7, debuffTargets: 5, atkReduce: 0.35, armorReduce: 0.25, desc: 'Maldição em Massa' }
         ]
     },
     curandeiro: {
         name: 'Curandeiro', icon: '💉', color: '#27ae60', rgb: '39, 174, 96', type: 'support',
         isWarrior: true, passive: true, tags: ['warrior', 'heal', 'support'],
         levels: [
-            { hp: 40, healPerTick: 5, desc: 'Cura guerreiros adj. +5/tick' },
-            { hp: 70, healPerTick: 8, desc: 'Cura +8/tick' },
+            { hp: 28, healPerTick: 4, desc: 'Cura guerreiros adj. +4/tick' },
+            { hp: 55, healPerTick: 8, desc: 'Cura +8/tick' },
             { hp: 110, healPerTick: 14, desc: 'Cura +14/tick' },
-            { hp: 160, healPerTick: 22, desc: 'Restauração Divina' }
+            { hp: 210, healPerTick: 24, desc: 'Restauração Divina' }
         ]
     },
     acampamento: {
@@ -179,87 +203,145 @@ const STRUCTS = {
         ]
     },
     bardo: {
-        name: 'Bardo', icon: '🪉', color: '#e8a317', rgb: '232,163,23',
+        name: 'Bardo', icon: '🪉', color: '#ff8c00', rgb: '255, 140, 0',
         type: 'support', passive: false, isWarrior: true, isBarricade: false, isLegendary: true,
         tags: ['suporte', 'cura', 'buff', 'lendário'],
-        levels: [{ desc: 'Cura global (cresce com wave, max 60). Ao receber dano: +40% dano global 5s.', atk: 8, spd: 12, hp: 150, selfHeal: 0.12 }]
+        levels: [{ desc: 'Ode à Vitória: Cura global massiva (80+). Ao ser atingido: +100% dano global por 8s.', atk: 25, spd: 10, hp: 450, selfHeal: 0.15 }]
     },
     trabuco: {
-        name: 'Trabuco', icon: '⚙️', color: '#b8860b', rgb: '184,134,11',
+        name: 'Trabuco', icon: '⚙️', color: '#ff8c00', rgb: '255, 140, 0',
         type: 'physical', passive: false, isWarrior: false, isBarricade: false, isLegendary: true,
         tags: ['área', 'pesado', 'anti-tank', 'lendário'],
-        levels: [{ desc: 'Dano = 25% HP máx do alvo. Splash 5. Estilhaça armadura (-50%).', atk: 0, spd: 18, armorBreak: 0.5 }]
+        levels: [{ desc: 'Aniquilação: 45% HP máx do alvo. Splash 8 alvos. Destrói 100% da armadura.', atk: 0, spd: 22, armorBreak: 1.0 }]
     },
     magico: {
-        name: 'Mágico', icon: '🎭', color: '#00bcd4', rgb: '0,188,212',
+        name: 'Mágico', icon: '🎭', color: '#ff8c00', rgb: '255, 140, 0',
         type: 'magical', passive: false, isWarrior: false, isBarricade: false, isLegendary: true,
         tags: ['controle', 'transformação', 'lendário'],
-        levels: [{ desc: '35% chance: Transforma inimigo em 🐇. Bosses: dano maciço (200).', atk: 200, spd: 15 }]
+        levels: [{ desc: 'Caos Arcano: 60% chance de Transforma em 🐇. Bosses: Dano catastrófico (1500).', atk: 1500, spd: 14 }]
+    },
+    dojo: {
+        name: 'Dojo', icon: '🏯', color: '#ff8c00', rgb: '255, 140, 0',
+        type: 'support', passive: true, isWarrior: false, isBarricade: false, isLegendary: true,
+        tags: ['buff', 'lendário', 'guerreiro'],
+        levels: [{ desc: 'Domínio Marcial: Guerreiros ganham +50% Dano e +50% Velocidade GLOBAL.', warriorGlobalAtk: 0.5, warriorGlobalSpd: 0.5 }]
+    },
+    ninja: {
+        name: 'Ninja', icon: '🥷', color: '#2c3e50', rgb: '44, 62, 80', type: 'physical',
+        isWarrior: true, tags: ['warrior', 'stealth', 'physical'],
+        levels: [
+            { hp: 22, atk: 12, spd: 5, desc: 'Fraco sozinho, mestre em combos' },
+            { hp: 45, atk: 24, spd: 4, desc: 'Agilidade das sombras' },
+            { hp: 90, atk: 45, spd: 3, desc: 'Golpe Fantasma' },
+            { hp: 180, atk: 80, spd: 2, desc: 'Grão-Mestre Shinobi' }
+        ]
+    },
+    lantern: {
+        name: 'Luminária', icon: '🏮', color: '#e67e22', rgb: '230, 126, 34', type: 'support',
+        passive: true, tags: ['buff', 'light', 'support'],
+        levels: [
+            { desc: 'Guerreiros adj. +40% vel.', warriorSpdBuff: 0.40 },
+            { desc: '+65% vel. guerreira', warriorSpdBuff: 0.65 },
+            { desc: '+85% vel. guerreira', warriorSpdBuff: 0.85 },
+            { desc: 'Farol da Guerra: +120% vel.', warriorSpdBuff: 1.20 }
+        ]
     }
 };
 
-const LEGENDARY_KEYS = ['bardo', 'trabuco', 'magico'];
+const LEGENDARY_KEYS = ['bardo', 'trabuco', 'magico', 'dojo'];
 
 function getCardTypeBar(type) {
-    const ti = type === 'physical' ? {icon:'🗡️',label:'FÍSICO',color:'#e74c3c'} : 
+    const ti = type === 'legendary' ? {icon:'💎',label:'ABSOLUTA',color:'linear-gradient(45deg, #ff8c00, #ffd700)'} :
+               (type === 'physical' ? {icon:'🗡️',label:'FÍSICO',color:'#e74c3c'} : 
                (type === 'magical' ? {icon:'✨',label:'MÁGICO',color:'#9b59b6'} : 
-               {icon:'⚙️',label:'SUPORTE',color:'#d4af37'});
+               {icon:'⚙️',label:'SUPORTE',color:'#d4af37'}));
     return `<div class="card-type-bar" style="background:${ti.color}">${ti.icon} ${ti.label}</div>`;
 }
 
 const COMBOS = [
     // ── WARRIOR SYNERGIES ──
     { id:'linha_frente', name:'INDESTRUTÍVEL', icon: '🛡️', color:'#27ae60',
-      structs:['espadachim','curandeiro'], desc:'Tropa indestrutível',
-      detail:'O Curandeiro tem cura +40%. O Espadachim adjacente ganha +15% de armadura. Sobrevivência máxima.',
+      structs:['espadachim','curandeiro'], desc:'INDESTRUTÍVEL',
+      detail:'O Curandeiro tem cura +40%. Espadachim adjacente ganha +15% de armadura.',
       bonus:'frontline', category:'warrior' },
     { id:'forca_guerra', name:'OFENSIVA', icon: '⚔️', color:'#c0392b',
-      structs:['espadachim','acampamento'], desc:'Ofensiva pesada na linha 1',
-      detail:'Acampamento dobra a vida do Espadachim. O Espadachim recebe +30% de dano base.',
+      structs:['espadachim','acampamento'], desc:'OFENSIVA',
+      detail:'Acampamento dobra vida do Espadachim. Guerreiro ganha +30% de dano base.',
       bonus:'warforce', category:'warrior' },
     { id:'fortaleza_viva', name:'FORTALEZA', icon: '🏰', color:'#3498db',
-      structs:['base_militar','curandeiro'], desc:'Defesa Absoluta',
-      detail:'Sempre que o Curandeiro curar, a Base Militar ganha +10% de evasão. Dano na Base reduzido em 20%.',
+      structs:['base_militar','curandeiro'], desc:'FORTALEZA',
+      detail:'Curas no setor dão +10% evasão à Base. Dano na Base reduzido em 20%.',
       bonus:'fortress', category:'warrior' },
     { id:'acampamento_medico', name:'MEDCAMP', icon: '💉', color:'#2ecc71',
-      structs:['curandeiro','acampamento'], desc:'Campo de cura expandido',
-      detail:'Acampamento cura guerreiros adjacentes +8/tick. Curandeiro adjacente ganha +50% heal.',
+      structs:['curandeiro','acampamento'], desc:'MEDCAMP',
+      detail:'Acampamento cura aliados (+8/tick). Curandeiro recebe bônus de +50% heal.',
       bonus:'medcamp', category:'warrior' },
+    { id:'furia_sombras', name:'FÚRIA SOMBRIA', icon: '🥷', color:'#2c3e50',
+      structs:['ninja','espadachim'], desc:'FÚRIA SOMBRIA',
+      detail:'Ninja e Espadachim ganham +40% de dano base quando adjacentes.',
+      bonus:'shadow_fury', category:'warrior' },
+    { id:'protecao_eterea', name:'PROTEÇÃO ETÉREA', icon: '⛩️', color:'#1abc9c',
+      structs:['ninja','shrine'], desc:'PROTEÇÃO ETÉREA',
+      detail:'Ninja ganha +60% de HP máximo e Santuário cura +15 extra nele.',
+      bonus:'ethereal_guard', category:'warrior' },
+    { id:'passo_vento', name:'PASSO DE VENTO', icon: '🏮', color:'#e67e22',
+      structs:['ninja','lantern'], desc:'PASSO DE VENTO',
+      detail:'Ninja ataca com +100% de velocidade. Luminária brilha com luz azul.',
+      bonus:'wind_step', category:'warrior' },
+    { id:'master_ninja', name:'MASTER', icon: '🔆', color:'#ffd700',
+      structs:['dojo','ninja'], desc:'MASTER',
+      detail:'MASTER: O Ninja executa qualquer inimigo com menos de 30% da vida total.',
+      bonus:'master_execute', category:'legendary' },
     // ── ELEMENTAL & MAGIC ──
     { id:'corrupcao', name:'MIASMA', icon: '☣️', color:'#8e44ad',
-      structs:['bruxo','venom'], desc:'Veneno acelerado e letal',
-      detail:'Lab. Químico recebe alcance global de DOT. Bruxo debuffa +2 alvos extras com veneno simultâneo.',
+      structs:['bruxo','venom'], desc:'MIASMA',
+      detail:'Lab. Químico ganha alcance global. Bruxo envenena até 2 alvos por vez.',
       bonus:'corrupt', category:'elemental' },
     { id:'reator_plasma', name:'PLASMA', icon: '⚡', color:'#f39c12',
-      structs:['tesla','obelisk'], desc:'Tempestade de raios em cadeia',
-      detail:'Tesla atinge +3 alvos. Obelisco garante chance de paralisação total a todos atingidos.',
+      structs:['tesla','obelisk'], desc:'PLASMA',
+      detail:'Torre Tesla atinge todos no campo. Obelisco paralisa alvos atingidos.',
       bonus:'plasma', category:'elemental' },
     { id:'regen_arcana', name:'MANA', icon: '💧', color:'#1abc9c',
-      structs:['shrine','mage'], desc:'Cura mística retroalimentada',
-      detail:'Todo dano causado por Magos aumenta permanentemente o HP máximo do Santuário.',
+      structs:['shrine','mage'], desc:'MANA',
+      detail:'O dano causado por Magos aumenta o HP máximo do Santuário.',
       bonus:'mana_spring', category:'elemental' },
     { id:'inferno_toxico', name:'TÓXICO', icon: '🔥', color:'#e67e22',
-      structs:['fire','venom'], desc:'Chamas envenenadas',
-      detail:'DOT de fogo e veneno se combinam: 2x DOT quando ambos ativos no alvo. -20% armadura permanente.',
+      structs:['fire','venom'], desc:'TÓXICO',
+      detail:'Dano de fogo e veneno se combinam para ignorar 20% da armadura.',
       bonus:'toxic_fire', category:'elemental' },
     // ── TACTICS & ECONOMY ──
     { id:'economia', name:'SAQUE', icon: '💰', color:'#f1c40f',
-      structs:['cofre','acampamento'], desc:'Pilhagem de guerra',
-      detail:'Acampamento agora concede +2 de moedas (Cofre) após a morte de inimigos boss. Cofre rende +60%.',
+      structs:['cofre','acampamento'], desc:'SAQUE',
+      detail:'Inimigos Boss derrubam +2 moedas extras. Redimento do Cofre +60%.',
       bonus:'plunder', category:'economy' },
     { id:'logistica', name:'LOGÍSTICA', icon: '📦', color:'#cd853f',
-      structs:['cofre','base_militar'], desc:'Recursos velozes',
-      detail:'Geração do Cofre +50%. Estruturas Militares ganham +1 de nível grátis.',
+      structs:['cofre','base_militar'], desc:'LOGÍSTICA',
+      detail:'Geração de moedas +50%. Estruturas Militares ganham +1 nível bônus.',
       bonus:'logistics', category:'economy' },
     { id:'arsenal', name:'ARTILHARIA', icon: '🔭', color:'#e74c3c',
-      structs:['base_militar','sniper'], desc:'Tiro de longo alcance tático',
-      detail:'Atiradores recebem Velocidade Ataque +50% se do lado de Base.',
+      structs:['base_militar','sniper'], desc:'ARTILHARIA',
+      detail:'Atiradores ganham +50% de velocidade de ataque próximos à Base.',
       bonus:'artillery', category:'economy' },
     { id:'arsenal2', name:'BATERIA', icon: '🏹', color:'#2ecc71',
-      structs:['base_militar','archer'], desc:'Arqueiros aprimorados',
-      detail:'Arqueiros ganham +50% velocidade e +1 alvo adicional.',
-      bonus:'artillery', category:'economy' }
+      structs:['base_militar','archer'], desc:'BATERIA',
+      detail:'Arqueiros ganham +50% velocidade e disparam em um alvo extra.',
+      bonus:'artillery', category:'economy' },
+    // ── LEGENDARY COMBOS ──
+    { id:'witcher', name:'THE WITCHER', icon: '🔆', color:'#00d2ff',
+      structs:['bardo','espadachim'], desc:'THE WITCHER',
+      detail:'O Espadachim recebe um escudo mágico.',
+      bonus:'witcher', category:'legendary' }
 ];
+
+function discoverCombo(id) {
+    const disc = JSON.parse(localStorage.getItem('wdCombosDiscovered') || '[]');
+    if (!disc.includes(id)) {
+        disc.push(id);
+        localStorage.setItem('wdCombosDiscovered', JSON.stringify(disc));
+        addLog(`✨ NOVO COMBO DESCOBERTO!`, 'special');
+    }
+}
+function hasDiscoveredCombo(id) { return JSON.parse(localStorage.getItem('wdCombosDiscovered') || '[]').includes(id); }
 
 const ASCENSAO_DOURADA = {
     id:'ascensao', name:'ASCENSÃO DOURADA', icon:'🌟', color:'#ffd700',
@@ -268,29 +350,58 @@ const ASCENSAO_DOURADA = {
     bonus:'ascension', category:'special'
 };
 
+// 👾 TEMPLATE PARA NOVO MONSTRO:
+/*
+    { name: 'Nome', icon: '❓', hp: 100, atk: 10, armor: 5, tier: 1-7, danger:'delta|gamma|beta|epsilon|alpha|omega', desc: 'Descrição.', special: 'fast|venomous|shooter|tank|explosive|elite|boss|anomaly' },
+*/
+
 const BASE_ENEMIES = [
-    { name: 'Slime',           icon: '💧', hp: 12,  atk: 1,  armor: 0,  tier: 0, desc: 'Criatura gelatinosa fraca e lenta.' },
-    { name: 'Goblin',          icon: '👺', hp: 20,  atk: 1,  armor: 0,  tier: 1, desc: 'Ágil e traiçoeiro. Ataca em grandes grupos.' },
-    { name: 'Orc Guerreiro',   icon: '🪓', hp: 45,  atk: 3,  armor: 1,  tier: 2, desc: 'Bruto com armadura leve e força bruta.' },
-    { name: 'Mago Sombrio',    icon: '🔮', hp: 75,  atk: 8,  armor: 1,  tier: 3, desc: 'Canaliza poder arcano sombrio de longo alcance.' },
-    { name: 'Cavaleiro Morto', icon: '🏇', hp: 140, atk: 15, armor: 3,  tier: 4, desc: 'Cavaleiro caído com armadura pesada.' },
-    { name: 'Wyvern',          icon: '🐉', hp: 280, atk: 25, armor: 6,  tier: 5, desc: 'Dragão menor voador. Destruição massiva.' },
-    { name: 'General Kolossus',icon: '🧱', hp: 650, atk: 45, armor: 12, tier: 6, desc: 'Colosso ancestral. Quase indestrutível.' },
+    { name: 'Slime',           icon: '💧', hp: 12,  atk: 1,  armor: 0,  tier: 0, danger:'delta', desc: 'Criatura gelatinosa fraca e lenta.' },
+    { name: 'Abóbora',         icon: '🎃', hp: 20,  atk: 2,  armor: 0,  tier: 1, danger:'delta', desc: 'Fraca, as vezes explode ao morrer - Dano 5.', special: 'explosive', deathDmg: 5 },
+    { name: 'Morcego',         icon: '🦇', hp: 15,  atk: 1,  armor: 0,  tier: 1, danger:'delta', desc: 'Rápido e fraco contra fogo.', special: 'fast', weakness: 'fire' },
+    { name: 'Batela',          icon: '🪳', hp: 25,  atk: 2,  armor: 0,  tier: 2, danger:'beta', desc: 'Peste que foca Curandeiros.', special: 'healer_hunter', isBatela: true },
+    { name: 'Goblin',          icon: '👺', hp: 25,  atk: 1,  armor: 0,  tier: 1, danger:'delta', desc: 'Ágil e traiçoeiro. Ataca em grandes grupos.' },
+    { name: 'Orc Guerreiro',   icon: '🪓', hp: 55,  atk: 3,  armor: 1,  tier: 2, danger:'gamma', desc: 'Bruto com armadura leve e força bruta.' },
+    { name: 'Mago Sombrio',    icon: '🔮', hp: 110, atk: 7,  armor: 1,  tier: 3, danger:'gamma', desc: 'Canaliza poder arcano sombrio de longo alcance.' },
+    { name: 'Esqueleto Arqueiro', icon: '💀', hp: 45,  atk: 4,  armor: 0,  tier: 2, danger:'gamma', desc: 'Atirador morto-vivo que ataca de longe.', special: 'shooter' },
+    { name: 'Demolidor',       icon: '👹', hp: 140, atk: 12, armor: 2,  tier: 3, danger:'gamma', desc: 'Destruidor de defesas. Foca Muralhas e Elite.', special: 'demolisher', isDemolidor: true },
+    { name: 'Latro',           icon: '🕷️', hp: 320, atk: 15, armor: 4,  tier: 4, danger:'epsilon', desc: 'Ao morrer, libera 2 Batelas.', special: 'spawner', isLatro: true },
+    { name: 'Cavaleiro Morto', icon: '🏇', hp: 240, atk: 12, armor: 4,  tier: 4, danger:'beta', desc: 'Cavaleiro caído com armadura pesada.' },
+    { name: 'Wyvern',          icon: '🐉', hp: 500, atk: 20, armor: 6,  tier: 5, danger:'beta', desc: 'Dragão menor voador. Destruição massiva.' },
+    { name: 'General Kolossus',icon: '🧱', hp: 1350, atk: 45, armor: 15, tier: 6, danger:'beta', desc: 'Colosso ancestral. Quase indestrutível.' },
+];
+
+const ALPHA_ENEMIES = [
+    { name: 'Tuti',            icon: '🐆', hp: 800,  atk: 25, armor: 6,  tier: 5, danger:'alpha', desc: 'Predador veloz. O primeiro desafio real.', special: 'fast' },
+    { name: 'Monken',          icon: '🐒', hp: 1800, atk: 35, armor: 15, tier: 6, danger:'alpha', desc: 'Ser errático que carrega almas.', special: 'anomaly', isMonken: true, soulDropAmt: 30 },
+    { name: 'Latus',           icon: '🦂', hp: 2500, atk: 55, armor: 25, tier: 7, danger:'alpha', desc: 'Guardião do deserto. Resistência extrema.', special: 'tank' },
+];
+
+const OMEGA_ENEMIES = [
+    { name: 'Odin',           icon: '🐦‍⬛', hp: 3000, atk: 60, armor: 15, danger:'omega', desc: 'O Corvo do Fim. Velocidade divina.', special: 'fast', isOmega: true },
+    { name: 'Malmir',         icon: '🦧', hp: 6500, atk: 85, armor: 50, danger:'omega', desc: 'Pesadelo Primordial. Vida infinita.', special: 'boss', isOmega: true, isMalmir: true },
+    { name: 'Solara',         icon: '🐦‍🔥', hp: 4500, atk: 120, armor: 20, danger:'omega', desc: 'Phoenix Solar. Dano flamejante global.', special: 'elemental_boss', isOmega: true, auraDmg: 5 }
 ];
 
 const SPECIAL_ENEMIES = [
-    { name: 'Sombra Ágil',     icon: '👤', hp: 18,  atk: 3,  armor: 0,  tier: 1, desc: 'Velocidade dobrada. Ataca duas vezes.', special: 'fast' },
-    { name: 'Serpente Tóxica',  icon: '🐍', hp: 35,  atk: 5,  armor: 0,  tier: 2, desc: 'Envenena guerreiros ao atacar.', special: 'venomous', structDot: 3 },
-    { name: 'Atirador Sombrio',icon: '🏹', hp: 60,  atk: 10, armor: 0,  tier: 3, desc: 'Ignora barricadas. Foca guerreiros.', special: 'shooter' },
-    { name: 'Golem Férreo',    icon: '🪨', hp: 250, atk: 8,  armor: 8,  tier: 4, desc: 'Tanque maciço. Vida e armadura gigantescas.', special: 'tank' },
-    { name: 'Demolidor',       icon: '💣', hp: 100, atk: 12, armor: 1,  tier: 4, desc: 'Explode ao morrer. Causa dano massivo à base.', special: 'explosive', deathDmg: 20 },
-    { name: 'Campeão',         icon: '👑', hp: 450, atk: 35, armor: 8,  tier: 5, desc: 'Guerreiro de elite poderoso. Recompensa grande.', special: 'elite' },
-    { name: 'Monken',          icon: '🐒', hp: 600, atk: 15, armor: 10, tier: 6, desc: 'O Viajante Dimensional. Um ser errático que carrega tesouros de almas em sua forma instável.', special: 'anomaly', isMonken: true, soulDropAmt: 15 },
+    { name: 'Sombra Ágil',     icon: '👤', hp: 25,  atk: 4,  armor: 0,  tier: 1, danger:'beta', desc: 'Velocidade dobrada. Ataca duas vezes.', special: 'fast' },
+    { name: 'Serpente Tóxica',  icon: '🐍', hp: 45,  atk: 6,  armor: 0,  tier: 2, danger:'beta', desc: 'Envenena guerreiros ao atacar.', special: 'venomous', structDot: 4 },
+    { name: 'Atirador Sombrio',icon: '🏹', hp: 75,  atk: 14, armor: 0,  tier: 3, danger:'beta', desc: 'Ignora barricadas. Foca guerreiros.', special: 'shooter' },
+    { name: 'Golem Férreo',    icon: '🪨', hp: 350, atk: 10, armor: 10, tier: 4, danger:'epsilon', desc: 'Tanque maciço. Vida e armadura gigantescas.', special: 'tank' },
+    { name: 'Unicórnio',       icon: '🦄', hp: 2800, atk: 5, armor: 5,  tier: 5, danger:'epsilon', desc: 'Anomalia rara. Muita vida, derruba Almas.', special: 'anomaly', isUnicorn: true, soulDropAmt: 20 },
+    { name: 'Campeão',         icon: '👑', hp: 1200, atk: 45, armor: 12, tier: 4, danger:'epsilon', desc: 'Guerreiro de elite poderoso. Recompensa grande.', special: 'elite' },
 ];
 
-const ENEMIES_DB = [...BASE_ENEMIES, ...SPECIAL_ENEMIES,
-    { name: 'Malmir', icon: '🦧', hp: 1200, atk: 55, armor: 15, tier: 7, desc: 'O Pesadelo Primordial. Uma entidade que transcende as ondas, buscando apenas o fim da luz.', special: 'boss', deathDmg: 0, structDot: 0, isMalmir: true, soulDropAmt: 40 }
-].sort((a, b) => a.tier !== b.tier ? a.tier - b.tier : a.hp - b.hp); 
+const ENEMIES_DB = [...BASE_ENEMIES, ...SPECIAL_ENEMIES, ...ALPHA_ENEMIES, ...OMEGA_ENEMIES].sort((a, b) => (a.tier||0) - (b.tier||0));
+
+const DANGER_LEVELS = {
+    'delta': { name:'DELTA', icon:'Δ', color:'#2ecc71', dropChance:0.05, desc:'Perigo baixo - Unidades de massa.' },
+    'gamma': { name:'GAMA', icon:'Γ', color:'#3498db', dropChance:0.15, desc:'Perigo relativo - Exige atenção básica.' },
+    'beta': { name:'BETA', icon:'Β', color:'#f39c12', dropChance:0.40, desc:'Perigo médio - Unidades táticas perigosas.' },
+    'epsilon': { name:'ÉPSILON', icon:'Ε', color:'#e74c3c', dropChance:0.75, desc:'Perigo eminente - Capacidade de ruptura.' },
+    'alpha': { name:'ALFA', icon:'Α', color:'#9b59b6', dropChance:1.00, desc:'PERIGO! - Unidades de elite e anomalias.' },
+    'omega': { name:'ÔMEGA', icon:'Ω', color:'#ff3333', dropChance:1.00, desc:'FIM DO MUNDO - O Pesadelo Primordial.' }
+};
 
 const ENEMY_AURAS = {
     'white': { name: 'Abençoado', icon: '⚪', hpMult: 1.2, atkMult: 1.0, coinMult: 3.0, dropSoul: true, soulAmt: 2 },
@@ -308,8 +419,8 @@ const SPECIAL_COLORS = { 'venomous': '#2ecc71', 'shooter': '#e67e22', 'armored':
 const SOUL_TREE_NODES = {
     // ⚔️ Físico
     'phy_1': { branch: 'phy', name: 'Lâmina Penetrante', icon: '🗡️', desc: 'Ignora 10% armadura por nível.', cost: 1, req: null, maxLv: 3, costPerLv: [1, 2, 4] },
-    'phy_2': { branch: 'phy', name: 'Instinto', icon: '🎯', desc: '+25% Dano em HP < 50%.', cost: 3, req: 'phy_1' },
-    'phy_3': { branch: 'phy', name: 'Execução Real', icon: '💀', desc: '+35% Dano em Finalização.', cost: 6, req: 'phy_2' },
+    'phy_2': { branch: 'phy', name: 'Instinto', icon: '🎯', desc: '+25% Dano em HP baixo - 50%', cost: 3, req: 'phy_1' },
+    'phy_3': { branch: 'phy', name: 'Execução Real', icon: '💀', desc: '+35% Dano em Finalização', cost: 6, req: 'phy_2' },
     
     // ✨ Mágico
     'mag_1': { branch: 'mag', name: 'Maldição', icon: '🌀', desc: 'Debuffs duram +45%.', cost: 1, req: null },
@@ -318,7 +429,7 @@ const SOUL_TREE_NODES = {
     
     // 🪙 Economia
     'eco_1': { branch: 'eco', name: 'Bolsas de Ouro', icon: '💵', desc: '+20 Moedas iniciais por nível.', cost: 1, req: null, maxLv: 3, costPerLv: [1, 2, 3] },
-    'eco_2': { branch: 'eco', name: 'Logística de Campo', icon: '🚛', desc: 'Reroll -3 custo/nível (NV3 Grátis).', cost: 2, req: 'eco_1', maxLv: 3, costPerLv: [2, 4, 7] },
+    'eco_2': { branch: 'eco', name: 'Logística de Campo', icon: '🚛', desc: 'Reroll -3 custo por nível - NV3 Grátis', cost: 2, req: 'eco_1', maxLv: 3, costPerLv: [2, 4, 7] },
     'eco_3': { branch: 'eco', name: 'Ganância de Guerra', icon: '💰', desc: 'Moedas 3x em Chefes/Elites.', cost: 6, req: 'eco_2' },
 
     // 🛡️ Neutro
@@ -342,14 +453,16 @@ const SOUL_TREE_NODES = {
     'apex_utility': { branch: 'apex', name: 'Alta Frequência', icon: '🧠', desc: 'Combos utilitários 5x mais fortes.', cost: 12, req: 'ANY_TIER_3' }
 };
 
+const AMULETS_DB = {}; // Placeholder para futura implementação do Altar de Amuletos
+
 const LIBRARY_BOOKS = {
     'book_blue': { id: 'book_blue', rarity: 'rare', name: 'Códice do Vento', css: 'book-rare', icon: '📖', desc: '+20% Cadência Global em todas as torres.', cost: 8 },
     'book_red': { id: 'book_red', rarity: 'rare', name: 'Grimório Flamífero', css: 'book-rare', icon: '📜', desc: '+25% Dano Global em todas as torres.', cost: 8 },
     'book_green': { id: 'book_green', rarity: 'epic', name: 'Relíquia da Vida', css: 'book-epic', icon: '🌿', desc: '+30% HP Máximo e cura total no uso.', cost: 15 },
     'book_yellow': { id: 'book_yellow', rarity: 'epic', name: 'Pacto da Avareza', css: 'book-epic', icon: '💰', desc: '+50% Moedas de todas as fontes.', cost: 12 },
     'book_trinity': { id: 'book_trinity', rarity: 'legendary', name: 'Tomo da Trindade', css: 'book-legendary', icon: '🔱', desc: '+20% Dano, SPD e HP Global.', cost: 30 },
-    'book_orange': { id: 'book_orange', rarity: 'epic', name: 'Chama das Almas', css: 'book-epic', icon: '🕯️', desc: '+15% chance de Inimigos Especiais (⚪/🔴).', cost: 15 },
-    'book_abyss': { id: 'book_abyss', rarity: 'forbidden', name: 'O Vazio', css: 'book-forbidden', icon: '🌑', desc: 'DANO MASSIVO (+75%), mas BASE tem apenas 1 HP.', cost: 66 },
+    'book_orange': { id: 'book_orange', rarity: 'epic', name: 'Chama das Almas', css: 'book-epic', icon: '🕯️', desc: '+15% chance de Inimigos de Elite', cost: 15 },
+    'book_abyss': { id: 'book_abyss', rarity: 'forbidden', name: 'O Vazio', css: 'book-forbidden', icon: '🌑', desc: 'DANO MASSIVO +75% - BASE tem apenas 1 HP', cost: 66 },
     'book_voucher': { id: 'book_voucher', rarity: 'rare', name: 'Vale-Livro', css: 'book-rare', icon: '🔖', desc: 'Se transforma no livro da Run anterior.', cost: 5 }
 };
 
@@ -360,7 +473,7 @@ const LIBRARY_BOOKS = {
 let G = {
     wave: 1, hp: 50, maxHp: 50, coins: 35, kills: 0, highScore: 1, souls: 0,
     soulsThisRun: 0,
-    gridSize: 3, cells: [], 
+    gridSize: 3, cells: [], enemies: [],
     phase: 'idle', 
     timer: null,
     totalEnemies: 0, currentEnemies: 0,
@@ -370,12 +483,22 @@ let G = {
     isStarterPick: false,
     analytics: {},
     activeBook: null,
-    boughtBookThisRun: false
+    boughtBookThisRun: false,
+    omegaWaveTriggered: false,
+    // Preparação para Sistema de Amuletos
+    unlockedAmulets: [],
+    activeAmulets: [null, null, null],
+    amuletSlots: 1
 };
 
 const bestiaryData = JSON.parse(localStorage.getItem('wdBestiary') || '{}');
 G.highScore = Number(localStorage.getItem('wdHighScore') || 1);
 G.souls = Number(localStorage.getItem('wdSouls') || 0);
+
+// Carregar Dados de Amuletos (Preparação)
+G.unlockedAmulets = JSON.parse(localStorage.getItem('wdUnlockedAmulets') || '[]');
+G.activeAmulets = JSON.parse(localStorage.getItem('wdActiveAmulets') || '[null, null, null]');
+G.amuletSlots = Number(localStorage.getItem('wdAmuletSlots') || 1);
 
 // Implementação Soul Tree: Início de Run
 function applyStartSoulBuffs() {
@@ -393,6 +516,7 @@ applyStartSoulBuffs();
 
 function addLog(msg, type = '') {
     const log = document.getElementById('battle-log');
+    if (!log) return;
     const div = document.createElement('div');
     div.className = `log-entry ${type ? 'log-'+type : ''}`;
     div.textContent = msg;
@@ -401,7 +525,53 @@ function addLog(msg, type = '') {
 }
 
 function updateHUD() {
-    document.getElementById('h-wave').textContent = G.wave;
+    let highestDanger = 'delta';
+    const dangerOrder = ['delta', 'gamma', 'beta', 'epsilon', 'alpha', 'omega'];
+    G.enemies.forEach(e => {
+        if (dangerOrder.indexOf(e.danger) > dangerOrder.indexOf(highestDanger)) highestDanger = e.danger;
+    });
+    const dInfo = DANGER_LEVELS[highestDanger];
+    const isOmegaActive = G.enemies && G.enemies.some(ev => ev.isOmega);
+    
+    let icon = dInfo.icon;
+    let color = dInfo.color;
+    let classes = '';
+
+    if (isOmegaActive) {
+        icon = 'Ω';
+        color = '#ff0044';
+        classes = 'omega-active';
+    }
+
+    const dangerHTML = `<span class="${classes}" style="font-size: 0.82em; margin-left: 6px; color: ${color}; text-shadow: 0 0 12px ${color}aa; vertical-align: middle;">${icon}</span>`;
+    
+    const waveEl = document.getElementById('h-wave');
+    const waveHeader = document.querySelector('.wave-tracker-header');
+    const waveInfo = document.querySelector('.wave-info');
+
+    if (waveEl) {
+        waveEl.innerHTML = `${G.wave}${dangerHTML}`;
+        
+        // Warning: Antes da wave
+        if (G.omegaWaveTriggered) {
+            waveEl.classList.add('omega-warning');
+            if (waveInfo) waveInfo.classList.add('omega-warning');
+        } else {
+            waveEl.classList.remove('omega-warning');
+            if (waveInfo) waveInfo.classList.remove('omega-warning');
+        }
+
+        // Fire/Glow: Durante a wave com Ômega
+        if (waveHeader) {
+            if (isOmegaActive) {
+                waveHeader.classList.add('omega-active-fire');
+                if (waveInfo) waveInfo.classList.add('omega-active-fire');
+            } else {
+                waveHeader.classList.remove('omega-active-fire');
+                if (waveInfo) waveInfo.classList.remove('omega-active-fire');
+            }
+        }
+    }
     document.getElementById('h-coins').textContent = Math.floor(G.coins);
     document.getElementById('h-souls').textContent = G.souls;
     document.getElementById('h-hp').textContent = Math.max(0, G.hp);
@@ -430,19 +600,30 @@ function updateHUD() {
     if (btnStart) {
         btnStart.textContent = G.phase === 'wave' ? 'EM COMBATE' : `▶ WAVE ${G.wave}`;
         btnStart.disabled = G.phase !== 'idle';
+        
+        // Efeito Ômega no Botão Principal
+        if (G.omegaWaveTriggered) btnStart.classList.add('omega-warning');
+        else btnStart.classList.remove('omega-warning');
+        
+        if (isOmegaActive) btnStart.classList.add('omega-active-fire');
+        else btnStart.classList.remove('omega-active-fire');
     }
 }
 
 function flash(type) {
     const el = document.getElementById('flash-' + type);
-    el.classList.add('active-flash');
-    setTimeout(() => el.classList.remove('active-flash'), 150);
+    if(el) {
+        el.classList.add('active-flash');
+        setTimeout(() => el.classList.remove('active-flash'), 150);
+    }
 }
 
 function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    if(t) {
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
 }
 
 function spawnText(x, y, txt, type) {
@@ -453,7 +634,6 @@ function spawnText(x, y, txt, type) {
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }
-
 
 function getCashbackRate() { return hasCombo('logistics') ? 0.1 : 0; }
 function recordEncounter(name) { if (!bestiaryData[name]) bestiaryData[name] = { kills: 0 }; localStorage.setItem('wdBestiary', JSON.stringify(bestiaryData)); }
@@ -498,14 +678,12 @@ function renderGrid() {
             div.style.setProperty('--sc', s.color);
             div.style.setProperty('--sr', s.rgb);
             
-            // Type Identity
             div.classList.add('type-' + s.type);
             if (s.isWarrior) div.classList.add('warrior-unit');
             
             let iconHTML = `<div class="cell-icon">${s.icon}</div>`;
             let nameHTML = `<div class="cell-name">${s.name}</div>`;
             
-            // Calcule o nvel bnus do Amplificador para o HUD
             let bonusLvlHUD = 0;
             getAdj(i).forEach(n => {
                 const nc = G.cells[n];
@@ -515,29 +693,55 @@ function renderGrid() {
             const currentEff = Math.min(4, c.level + bonusLvlHUD);
             let levelHTML = c.level > 0 || bonusLvlHUD > 0 ? `<div class="cell-level">LV${c.level + 1}</div>` : '';
             
-            // Buff indicators
             let bonusHTML = '';
             if (bonusLvlHUD > 0) bonusHTML += `<div class="level-buff-badge">+${bonusLvlHUD}</div>`;
             if (s.isWarrior) iconHTML += `<div class="warrior-indicator">⚔️</div>`;
             
-            // Level 5/6 Visuals
             const totalLvEff = c.level + bonusLvlHUD;
-            if (totalLvEff >= 5) {
+            if (s.isLegendary) {
+                div.classList.add('evo-legendary');
+                div.style.boxShadow = `0 0 20px rgba(255, 140, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3)`;
+                div.style.borderColor = '#ffd700';
+            } else if (totalLvEff >= 5) {
                 div.classList.add('evo-lv6');
             } else if (c.level === 3) {
                 const adjAmps = getAdj(i).filter(n => G.cells[n]?.struct === 'obelisk' && G.cells[n].level === 3);
                 if (adjAmps.length > 0) div.classList.add('evo-lv5'); else div.classList.add('evo-lv4');
             }
 
-            // HP bar for warriors/barricades
             let hpHTML = '';
-            if (c.hp !== null) {
-                const max = Math.ceil(s.levels[clampLevel(c.level)].hp * getGlobalHpMult());
-                const pct = (c.hp / max) * 100;
-                hpHTML = `<div class="hp-bar"><div class="hp-fill ${s.isWarrior ? 'warrior-hp' : ''}" style="width:${pct}%"></div></div>`;
+            if (c.hp !== null && (s.isWarrior || s.isBarricade)) {
+                const max = Math.ceil((s.levels[clampLevel(c.level)].hp || 1) * getGlobalHpMult());
+                const pct = Math.max(0, Math.min(100, (c.hp / max) * 100));
+                const hasWitcher = hasComboCells('witcher', i) && c.struct === 'espadachim';
+                
+                let shieldHTML = '';
+                const activeLegendaryCombo = G.activeCombos.find(co => 
+                    co.cells.includes(i) && 
+                    co.structs.some(sKey => STRUCTS[sKey].isLegendary)
+                );
+
+                if (activeLegendaryCombo) {
+                    const isWitcher = activeLegendaryCombo.id === 'witcher';
+                    const auraColor = activeLegendaryCombo.color || '#ffd700';
+                    const glowColor = `${auraColor}99`; // Ajuste de opacidade para o brilho
+                    const sealPos = isWitcher ? 'right: 4px' : 'left: 4px';
+                    
+                    if (isWitcher) {
+                        shieldHTML = `<div class="shield-fill" style="width: 100%; height: 5px; background: #00d2ff; position: absolute; bottom: -8px; left: 0; border-radius: 4px; box-shadow: 0 0 12px #00d2ff; z-index: 10;"></div>`;
+                    }
+
+                    div.style.setProperty('box-shadow', `0 0 35px ${glowColor}, inset 0 0 20px ${glowColor}`, 'important');
+                    div.style.setProperty('border', `2px solid ${auraColor}`, 'important');
+                    iconHTML += `<div class="legendary-seal" style="position: absolute; top: 4px; ${sealPos}; font-size: 18px; animation: pulse 1.5s infinite alternate; z-index: 20; filter: drop-shadow(0 0 8px ${auraColor});">🔆</div>`;
+                }
+                
+                hpHTML = `<div class="hp-bar" style="position: absolute; bottom: 6px; left: 8px; right: 8px; height: 5px; background: rgba(0,0,0,0.6); border-radius: 3px; overflow: hidden; z-index: 15;">
+                            <div class="hp-fill" style="width:${pct}%; height: 100%; background: ${s.isWarrior ? 'var(--accent2)' : 'var(--green)'}; transition: width 0.3s; box-shadow: 0 0 8px rgba(0,0,0,0.3);"></div>
+                            ${shieldHTML}
+                          </div>`;
             }
 
-            // Passive special indicator
             if (c.struct === 'base_militar') div.classList.add('militar-base');
             
             div.innerHTML = iconHTML + nameHTML + levelHTML + bonusHTML + hpHTML;
@@ -568,15 +772,14 @@ function detectCombos() {
     G.activeCombos = [];
     const detected = new Set();
     const comboBar = document.getElementById('active-combos');
+    if(!comboBar) return;
     comboBar.innerHTML = '';
 
     G.cells.forEach((c, i) => {
         if (!c.struct) return;
         COMBOS.forEach(combo => {
-            // New: structs is now an array of struct keys
             if (!combo.structs.includes(c.struct)) return;
             const otherKeys = combo.structs.filter(s => s !== c.struct);
-            // If combo has same struct twice (e.g. 2x mage), check adj for same
             const neededKey = otherKeys.length > 0 ? otherKeys[0] : c.struct;
             const adjs = getAdj(i).filter(n => G.cells[n]?.struct === neededKey);
             if (adjs.length > 0) {
@@ -584,23 +787,22 @@ function detectCombos() {
                 if (!detected.has(comboId)) {
                     detected.add(comboId);
                     G.activeCombos.push({ ...combo, cells: [i, ...adjs] });
+                    if (combo.category === 'legendary') discoverCombo(combo.id);
                 }
             }
         });
     });
 
-    // Special: Ascensão Dourada
-    const hasGodTier = G.cells.some((c, i) => c.level === 3 && getAdj(i).some(n => G.cells[n]?.struct === 'obelisk' && G.cells[n].level === 3));
-    if (hasGodTier) G.activeCombos.push({ ...ASCENSAO_DOURADA, cells: G.cells.map((_, i) => i) });
+    const hasAscension = G.cells.some((c, i) => c.level === 3 && getAdj(i).some(n => G.cells[n]?.struct === 'obelisk' && G.cells[n].level === 3));
+    if (hasAscension) G.activeCombos.push({ ...ASCENSAO_DOURADA, cells: G.cells.map((_, i) => i) });
 
-    // Render Pills
     const uniqueCombos = [...new Map(G.activeCombos.map(c => [c.id, c])).values()];
     if (uniqueCombos.length > 0) {
         comboBar.style.display = 'flex';
         uniqueCombos.forEach(c => {
             const pill = document.createElement('div'); pill.className = 'combo-pill';
             pill.style.setProperty('--cp', c.color);
-            pill.innerHTML = `<span class="combo-pill-icon">${c.icon || '⚡'}</span><span class="combo-pill-name">${c.desc}</span>`;
+            pill.innerHTML = `<span class="combo-pill-icon">${c.icon || '⚡'}</span><span class="combo-pill-name">${c.name}</span>`;
             pill.title = c.detail;
             comboBar.appendChild(pill);
         });
@@ -612,14 +814,12 @@ function highlightSynergies(i) {
     const cellEls = document.getElementById('grid-container').children;
     cellEls[i].classList.add('synergy-source');
     
-    // Check combos
     G.activeCombos.forEach(combo => {
         if (combo.cells.includes(i)) {
             combo.cells.forEach(idx => { if (idx !== i) cellEls[idx].classList.add('synergy-target'); });
         }
     });
 
-    // Check structural buffs
     const s = STRUCTS[c.struct];
     if (c.struct === 'forge' || c.struct === 'obelisk' || c.struct === 'base_militar' || c.struct === 'acampamento' || c.struct === 'curandeiro' || c.struct === 'library') {
         getAdj(i).forEach(n => { if (G.cells[n]?.struct) cellEls[n].classList.add('synergy-target'); });
@@ -671,7 +871,7 @@ function getPoisonArmorReduce(i) {
 }
 
 // ══════════════════════════════════════════════
-// V7 SYNERGY VISUALS (CANVAS)
+// SINERGY VISUALS (CANVAS)
 // ══════════════════════════════════════════════
 
 function drawComboConnections() {
@@ -695,6 +895,7 @@ function drawComboConnections() {
 function isAdj(i1, i2) { const n=G.gridSize, r1=Math.floor(i1/n), c1=i1%n, r2=Math.floor(i2/n), c2=i2%n; return Math.abs(r1-r2)+Math.abs(c1-c2) === 1;}
 function drawBeam(i1, i2, color, ctx) {
     const grid = document.getElementById('grid-container').children;
+    if (!grid[i1] || !grid[i2]) return;
     const b1 = grid[i1].getBoundingClientRect(), b2 = grid[i2].getBoundingClientRect();
     const x1 = b1.left + b1.width/2, y1 = b1.top + b1.height/2;
     const x2 = b2.left + b2.width/2, y2 = b2.top + b2.height/2;
@@ -704,58 +905,75 @@ function drawBeam(i1, i2, color, ctx) {
     ctx.strokeStyle = grad; ctx.lineWidth = 3; ctx.setLineDash([5, 15]); ctx.lineDashOffset = -Date.now()/50; ctx.stroke();
 }
 
-// ══════════════════════════════════════════════
-// WAVE & ENEMIES
-// ══════════════════════════════════════════════
-
 function buildWave() {
     const enemies = [];
-    const count = 4 + Math.floor(G.wave * 1.5) + (G.wave >= 30 ? Math.floor((G.wave - 29) * 1.5) : 0);
+    let count = 4 + Math.floor(G.wave * 1.5) + (G.wave >= 30 ? Math.floor((G.wave - 29) * 1.5) : 0);
+    if (G.omegaWaveTriggered) count = 1; 
     let scale;
-    if (G.wave <= 10) scale = 1 + (G.wave - 1) * 0.15; 
-    else if (G.wave <= 20) scale = 2.35 + (G.wave - 10) * 0.25;
-    else if (G.wave <= 30) scale = 4.85 + (G.wave - 20) * 0.40;
-    else scale = 8.85 + Math.pow(G.wave - 30, 1.6) * 0.4;
+    if (G.wave <= 10) scale = 1 + (G.wave - 1) * 0.12; 
+    else if (G.wave <= 20) scale = 2.08 + (G.wave - 10) * 0.18;
+    else if (G.wave <= 30) scale = 3.88 + (G.wave - 20) * 0.30;
+    else scale = 6.88 + Math.pow(G.wave - 30, 1.25) * 0.35;
     
+    let wavePumpkins = 0;
     for (let i = 0; i < count; i++) {
-        const isMalmirBoss = (G.wave === 10 || G.wave === 20 || G.wave === 30) && i === 0;
-        const isBoss = !isMalmirBoss && G.wave % 10 === 0 && i === 0;
+        let allowedGradients = ['delta'];
+        if (G.wave >= 6) allowedGradients.push('gamma');
+        if (G.wave >= 12) allowedGradients.push('beta');
+        if (G.wave >= 22) allowedGradients.push('epsilon');
+        
+        // Classe ALFA: Somente em waves dezenas (10, 20, 30...)
+        if (G.wave % 10 === 0 && G.wave >= 10) {
+            allowedGradients.push('alpha');
+        }
+        
+        // Classe ÔMEGA: Removida do spawn procedural para eventos específicos futuramente
+        // if (G.wave >= 40) allowedGradients.push('omega'); 
+
+        const isMalmirBoss = false; // Desativado até desenvolvermos o evento específico
+        const isBoss = G.wave % 10 === 0 && i === 0;
         const isMiniBoss = !isMalmirBoss && !isBoss && G.wave % 5 === 0 && G.wave > 5 && i === 0;
         
         let base;
-        
-        // Random Legendary Spawns
-        const monkenSpawn = G.wave > 5 && Math.random() < 0.02;
-        const malmirSpawn = G.wave > 15 && Math.random() < 0.005;
-
-        if (isMalmirBoss || malmirSpawn) {
-            base = ENEMIES_DB.find(e => e.isMalmir);
-            if (malmirSpawn && !isMalmirBoss) addLog('🌑 O PESADELO PRIMORDIAL SURGUIU!', 'bad');
-        } else if (monkenSpawn) {
-            base = ENEMIES_DB.find(e => e.isMonken);
-            addLog('🐒 O VIAJANTE DIMENSIONAL APARECEU!', 'special');
+        if (G.omegaWaveTriggered && i === 0) {
+            const omegas = ENEMIES_DB.filter(e => e.isOmega);
+            base = { ...omegas[Math.floor(Math.random() * omegas.length)] };
+        } else if (G.wave <= 2) {
+            // Waves 1 e 2: Apenas Slimes para tutorial
+            base = ENEMIES_DB.find(e => e.name === 'Slime');
+        } else if (G.wave % 10 === 0 && i === 0) {
+            // Favorcer Alfas específicos em dezenas
+            const alfas = ENEMIES_DB.filter(e => e.danger === 'alpha');
+            let picked = null;
+            if (G.wave === 10) picked = alfas.find(e => e.name === 'Tuti');
+            else if (G.wave === 20) picked = alfas.find(e => e.name === 'Monken');
+            else if (G.wave === 30) picked = alfas.find(e => e.name === 'Latus');
+            base = { ...(picked || alfas[Math.floor(Math.random() * alfas.length)]) };
         } else if (isBoss) {
-            const bossTier = Math.min(6, Math.floor(G.wave / 10) + 4);
-            const bossPool = ENEMIES_DB.filter(e => e.tier >= bossTier - 1 && e.tier <= bossTier && !e.isMalmir && !e.isMonken);
-            base = { ...(bossPool.length ? bossPool[Math.floor(Math.random() * bossPool.length)] : ENEMIES_DB.find(e => e.tier === 6)) };
+            const bossPool = ENEMIES_DB.filter(e => allowedGradients.includes(e.danger) && (e.special === 'elite' || e.danger === 'beta' || e.danger === 'epsilon'));
+            base = { ...(bossPool.length ? bossPool[Math.floor(Math.random() * bossPool.length)] : ENEMIES_DB.find(e => e.danger === 'delta')) };
         } else if (isMiniBoss) {
-            const elites = ENEMIES_DB.filter(e => e.special === 'elite' || e.special === 'tank');
-            base = { ...elites[Math.floor(Math.random() * elites.length)] };
+            const elites = ENEMIES_DB.filter(e => allowedGradients.includes(e.danger) && (e.special === 'elite' || e.special === 'tank'));
+            base = { ...(elites.length ? elites[Math.floor(Math.random() * elites.length)] : ENEMIES_DB.find(e => e.danger === 'gamma')) };
         } else {
-            if (G.wave === 1) {
-                base = ENEMIES_DB.find(e => e.name === 'Slime');
-            } else {
-                const maxTier = Math.min(6, Math.ceil(G.wave / 4));
-                const available = ENEMIES_DB.filter(e => e.tier <= maxTier && !e.special?.includes('boss') && !e.special?.includes('overlord') && !e.isMalmir && !e.isMonken);
-                base = { ...available[Math.floor(Math.random() * available.length)] };
-            }
+            const available = ENEMIES_DB.filter(e => {
+                if (!allowedGradients.includes(e.danger)) return false;
+                if (e.isOmega || e.isMalmir || e.isMonken) return false;
+                // Regra Abóbora: Wave 4+ e limite de 2 por wave
+                if (e.icon === '🎃') {
+                    if (G.wave < 4 || wavePumpkins >= 2) return false;
+                }
+                return true;
+            });
+            const pool = available.length ? available : ENEMIES_DB.filter(e => e.danger === 'delta');
+            base = { ...pool[Math.floor(Math.random() * pool.length)] };
+            if (base.icon === '🎃') wavePumpkins++;
         }
 
         const isMalmirUnit = base.isMalmir || false;
         const bs = isMalmirUnit ? 4.0 : (isBoss ? 2.0 : (isMiniBoss ? 1.4 : (base.special === 'elite' ? 1.3 : 1)));
         const ba = isMalmirUnit ? 1.4 : (isBoss ? 1.2 : (isMiniBoss ? 1.05 : (base.special === 'elite' ? 1.05 : 1))); 
 
-        // Aura assignment
         let aura = null;
         if (isMalmirUnit) { aura = 'darkness'; }
         else if (base.isMonken) { aura = 'darkness'; }
@@ -786,7 +1004,6 @@ function buildWave() {
             atk: Math.ceil(base.atk * scale * ba * aa),
             armor: (base.armor || 0) + Math.floor(G.wave / 8),
             coinValue: cValue,
-            frozen: hasSoulNode('neu_2') ? 5 : 0, 
             dot: 0, 
             isBoss: isBoss || isMalmirUnit || isMiniBoss || isMalmirBoss, 
             debuffed: false, corruptPoison: false,
@@ -808,62 +1025,105 @@ function buildWave() {
 function startWave() {
     if (G.phase !== 'idle') return;
     if (G.timer) { clearInterval(G.timer); G.timer = null; }
-    closeShop(); G.phase = 'wave'; 
-    const waveEl = document.getElementById('h-wave'); if (waveEl) { waveEl.classList.remove('wave-start-anim'); void waveEl.offsetWidth; waveEl.classList.add('wave-start-anim'); }
-    updateHUD(); addLog(`⚔ WAVE ${G.wave}`, 'bad'); detectCombos();
+    closeShop();
+    G.phase = 'wave';
+    const waveEl = document.getElementById('h-wave');
+    if (waveEl) {
+        waveEl.classList.remove('wave-start-anim');
+        void waveEl.offsetWidth;
+        waveEl.classList.add('wave-start-anim');
+    }
+    updateHUD();
+    addLog(`⚔ WAVE ${G.wave}`, 'bad');
+    detectCombos();
 
-    const hasAscension = hasCombo('ascension'), hasFortress = hasCombo('fortress'), hasCorrupt = hasCombo('corrupt');
-    let enemies = buildWave(); G.totalEnemies = enemies.length; G.currentEnemies = enemies.length; updateWaveProgress(G.currentEnemies, G.totalEnemies); renderEnemies(enemies);
+    const hasAscension = hasCombo('ascension');
+    const hasFortress = hasCombo('fortress');
+    const hasCorrupt = hasCombo('corrupt');
+    
+    G.enemies = buildWave();
+    G.omegaWaveTriggered = false; // Reset após o spawn
+    G.totalEnemies = G.enemies.length;
+    G.currentEnemies = G.enemies.length;
+    updateWaveProgress(G.currentEnemies, G.totalEnemies);
+    renderEnemies(G.enemies);
 
     const towers = [];
+    const hasDojo = G.cells.some(c => c.struct === 'dojo');
+
     G.cells.forEach((c, i) => {
         if (!c.struct || STRUCTS[c.struct].passive) return;
         const s = STRUCTS[c.struct], eff = getEffLevel(i);
         const ldat = s.isLegendary ? s.levels[0] : s.levels[Math.min(eff, 3)];
+        
         let spdMult = 0, atkMult = 1;
         getAdj(i).forEach(n => {
-            const nc = G.cells[n]; if (!nc || !nc.struct) return;
+            const nc = G.cells[n];
+            if (!nc || !nc.struct) return;
             const bLvl = clampLevel(nc.level);
-            if (nc.struct === 'forge') { spdMult += STRUCTS.forge.levels[bLvl].spdBuff || 0; if (STRUCTS.forge.levels[bLvl].atkBuff) atkMult += STRUCTS.forge.levels[bLvl].atkBuff; }
+            if (nc.struct === 'forge') {
+                spdMult += STRUCTS.forge.levels[bLvl].spdBuff || 0;
+                if (STRUCTS.forge.levels[bLvl].atkBuff) atkMult += STRUCTS.forge.levels[bLvl].atkBuff;
+            }
             if (nc.struct === 'obelisk' && s.type === 'magical') atkMult += STRUCTS.obelisk.levels[bLvl].boostMagical || 0;
-            if (nc.struct === 'base_militar' && s.type === 'physical') { atkMult += STRUCTS.base_militar.levels[bLvl].physDmgBuff || 0; spdMult += STRUCTS.base_militar.levels[bLvl].physSpdBuff || 0; }
+            if (nc.struct === 'base_militar' && s.type === 'physical') {
+                atkMult += STRUCTS.base_militar.levels[bLvl].physDmgBuff || 0;
+                spdMult += STRUCTS.base_militar.levels[bLvl].physSpdBuff || 0;
+            }
             if (nc.struct === 'acampamento' && s.isWarrior) atkMult += STRUCTS.acampamento.levels[bLvl].warriorDmgBuff || 0;
             if (nc.struct === 'library') atkMult += STRUCTS.library.levels[bLvl].atkBuff || 0;
+            if (nc.struct === 'lantern' && s.isWarrior) spdMult += STRUCTS.lantern.levels[bLvl].warriorSpdBuff || 0;
         });
+
         const poisonAdd = getPoisonInfusion(i), poisonArmRed = getPoisonArmorReduce(i);
-        G.activeCombos.forEach(co => { if (!co.cells.includes(i)) return; if (co.bonus === 'spd') spdMult += co.val; if (co.bonus === 'dmg') atkMult += co.val; if (co.bonus === 'dmg_phys' && s.type === 'physical') atkMult += co.val; });
+        G.activeCombos.forEach(co => {
+            if (!co.cells.includes(i)) return;
+            if (co.bonus === 'spd') spdMult += co.val;
+            if (co.bonus === 'dmg') atkMult += co.val;
+            if (co.bonus === 'dmg_phys' && s.type === 'physical') atkMult += co.val;
+            if (co.bonus === 'shadow_fury') atkMult += 0.4;
+            if (co.bonus === 'wind_step' && c.struct === 'ninja') spdMult += 1.0;
+        });
+
         if (s.tags.includes('ranged') && hasComboCells('artillery', i)) spdMult += 0.5;
         if (s.isWarrior && c.struct === 'espadachim' && hasComboCells('warforce', i)) atkMult += 0.3;
+        if (s.isWarrior && c.struct === 'ninja' && hasComboCells('ethereal_guard', i)) atkMult += 0.3;
         if (hasAscension) { atkMult += 0.1; spdMult += 0.1; }
         
-        // Soul Tree: Warrior Buffs
         if (s.isWarrior) {
             if (hasSoulNode('war_2')) atkMult += 0.25;
-            if (hasSoulNode('war_3') && c.hp/ldat.hp < 0.25) atkMult *= 3;
+            if (hasSoulNode('war_3') && c.hp / ldat.hp < 0.25) atkMult *= 3;
+            if (hasDojo) { atkMult += 0.5; spdMult += 0.5; }
         }
 
-        const metaDmgBonus = getSoulStacks('phy_1') * 0.10; if (metaDmgBonus > 0) atkMult += metaDmgBonus;
-        if (s.isLegendary) { atkMult = 1; spdMult = 0; if (metaDmgBonus > 0) atkMult += metaDmgBonus; }
+        const metaDmgBonus = getSoulStacks('phy_1') * 0.10;
+        if (metaDmgBonus > 0) atkMult += metaDmgBonus;
+        if (s.isLegendary) {
+            atkMult = 1; spdMult = 0;
+            if (metaDmgBonus > 0) atkMult += metaDmgBonus;
+        }
+        if (c.struct === 'dojo') { atkMult = 1; spdMult = 0; }
         
-        // Soul Tree: Library Multiplier
         let libMult = 1;
         if (hasSoulNode('lib_1')) libMult += 0.25;
         if (hasSoulNode('lib_2')) libMult += 0.35;
         if (hasSoulNode('lib_3')) libMult += 0.60;
 
-        if (G.activeBook === 'book_blue') spdMult += (0.20 * libMult); 
-        if (G.activeBook === 'book_red') atkMult += (0.25 * libMult); 
+        if (G.activeBook === 'book_blue') spdMult += (0.20 * libMult);
+        if (G.activeBook === 'book_red') atkMult += (0.25 * libMult);
         if (G.activeBook === 'book_trinity') { spdMult += (0.20 * libMult); atkMult += (0.20 * libMult); }
         
         if (eff === 4) atkMult *= 1.5;
         const hasGodObelisk = getAdj(i).some(n => G.cells[n]?.struct === 'obelisk' && clampLevel(G.cells[n].level) >= 2 && s.type === 'magical');
-        const finalSpd = Math.max(1, Math.round((ldat.spd || 10) / (1 + spdMult))), finalAtk = Math.ceil((ldat.atk || 0) * atkMult);
-        let extraCrit = 0; if (s.isWarrior && c.struct === 'espadachim' && hasComboCells('warforce', i)) extraCrit = 0.15;
-        let targets = ldat.targets || 1; if (c.struct === 'tesla' && hasComboCells('plasma', i)) targets += 3;
+        const finalSpd = Math.max(1, Math.round((ldat.spd || 10) / (1 + spdMult)));
+        const finalAtk = Math.ceil((ldat.atk || 0) * atkMult);
+        let extraCrit = 0;
+        if (s.isWarrior && c.struct === 'espadachim' && hasComboCells('warforce', i)) extraCrit = 0.15;
+        let targets = ldat.targets || 1;
+        if (c.struct === 'tesla' && hasComboCells('plasma', i)) targets += 3;
         const freezeAuraFinal = hasGodObelisk || (c.struct === 'tesla' && hasComboCells('plasma', i));
         const finalArmorPen = (ldat.armorPen || 0) + (getSoulStacks('phy_1') * 0.05);
         
-        // Apex Buffs
         let soulDmgBonus = 0;
         if (hasSoulNode('apex_offense') && G.activeCombos.some(co => co.cells.includes(i))) soulDmgBonus = 0.30;
 
@@ -871,39 +1131,146 @@ function startWave() {
     });
 
     let tick = 0, renderFrame = 0, bardBuff = 0;
-    // Medcamp combo: Acampamento cura guerreiros quando conectado a Curandeiro
+    const hasMaster = hasCombo('master_ninja');
     const hasMedcamp = hasCombo('medcamp');
+
     G.timer = setInterval(() => {
-        tick++; renderFrame++; if (bardBuff > 0) bardBuff--;
-        enemies.forEach(e => { if (e.transformed && e.transformTimer > 0) { e.transformTimer--; if (e.transformTimer <= 0 && e.originalStats) { const orig = e.originalStats; e.icon = orig.icon; e.name = orig.name; e.maxHp = orig.maxHp; e.hp = Math.min(e.hp, e.maxHp); e.atk = orig.atk; e.armor = orig.armor; e.transformed = false; e.originalStats = null; } } });
-        if (tick % 8 === 0) { 
-            enemies.forEach(e => { 
-                if (e.dot > 0) { 
-                    let d = e.dot; if (hasCorrupt && e.corruptPoison) d = Math.ceil(d * 1.5); 
-                    G.activeCombos.forEach(c => { if (c.bonus === 'dot') d = Math.ceil(d * (1 + c.val)); }); 
-                    e.hp -= d; 
-                } 
+        tick++;
+        renderFrame++;
+        if (bardBuff > 0) bardBuff--;
+        
+        G.enemies.forEach(e => {
+            if (e.transformed && e.transformTimer > 0) {
+                e.transformTimer--;
+                if (e.transformTimer <= 0 && e.originalStats) {
+                    const orig = e.originalStats;
+                    e.icon = orig.icon; e.name = orig.name; e.maxHp = orig.maxHp;
+                    e.hp = Math.min(e.hp, e.maxHp); e.atk = orig.atk; e.armor = orig.armor;
+                    e.transformed = false; e.originalStats = null;
+                }
+            }
+        });
+
+        if (tick % 8 === 0) {
+            G.enemies.forEach(e => {
+                if (e.dot > 0) {
+                    let d = e.dot;
+                    if (hasCorrupt && e.corruptPoison) d = Math.ceil(d * 1.5);
+                    G.activeCombos.forEach(c => { if (c.bonus === 'dot') d = Math.ceil(d * (1 + (c.val || 0))); });
+                    e.hp -= d;
+                }
                 if (e.frozen > 0) {
-                    // mag_1: Debuffs duram +30% -> na prática, 30% de chance de não reduzir o timer este tick
-                    if (!hasSoulNode('mag_1') || Math.random() > 0.23) e.frozen--; 
+                    if (!hasSoulNode('mag_1') || Math.random() > 0.23) e.frozen--;
                 }
                 if (e.fire > 0) e.fire--;
                 if (e.shocked > 0) e.shocked--;
-            }); 
-            let bf = enemies.length; 
-            enemies = enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; }); 
-            if (enemies.length !== bf) renderFrame = 5; 
+            });
+            let bf = G.enemies.length;
+            G.enemies = G.enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
+            if (G.enemies.length !== bf) renderFrame = 5;
         }
-        if (tick % 25 === 0) { G.cells.forEach((c, ci) => { if (c.struct === 'cofre') { const bl = clampLevel(c.level); let drip = STRUCTS.cofre.levels[bl].drip || 0; if (hasComboCells('coins_boost', ci)) drip = Math.ceil(drip * 1.6); if (hasComboCells('plunder', ci)) drip = Math.ceil(drip * 1.6); if (hasComboCells('logistics', ci)) drip = Math.ceil(drip * 1.5); if (G.activeBook === 'book_yellow') drip = Math.ceil(drip * 1.5); if (drip > 0) { G.coins += drip; const el = document.getElementById('grid-container').children[ci]; if (el) { const r = el.getBoundingClientRect(); spawnText(r.left + r.width / 2, r.top + 10, `+${drip}🪙`, 'coin'); el.classList.add('cofre-pulse'); setTimeout(() => el.classList.remove('cofre-pulse'), 400); } } } }); }
-        if (tick % 15 === 0) { G.cells.forEach((c, ci) => { if (!c.struct || c.struct !== 'curandeiro' || !c.hp || c.hp <= 0) return; const bl = clampLevel(c.level); let heal = STRUCTS.curandeiro.levels[bl].healPerTick || 0; if (hasComboCells('frontline', ci)) heal = Math.ceil(heal * 1.4); if (hasComboCells('medcamp', ci)) heal = Math.ceil(heal * 1.5); if (hasFortress) heal = Math.ceil(heal * 1.5); getAdj(ci).forEach(n => { const nc = G.cells[n]; if (!nc.struct || !STRUCTS[nc.struct].isWarrior || !nc.hp || nc.hp <= 0) return; if (STRUCTS[nc.struct].isLegendary) return; const maxHp = Math.ceil(STRUCTS[nc.struct].levels[clampLevel(nc.level)].hp * getGlobalHpMult()); nc.hp = Math.min(maxHp, nc.hp + heal); const el = document.getElementById('grid-container').children[n]?.querySelector('.hp-fill'); if (el) el.style.width = (Math.max(0, nc.hp) / maxHp * 100) + '%'; }); }); /* Medcamp: Acampamento cura guerreiros adj. */ if (hasMedcamp) { G.cells.forEach((c, ci) => { if (c.struct !== 'acampamento') return; if (!hasComboCells('medcamp', ci)) return; const campHeal = 8; getAdj(ci).forEach(n => { const nc = G.cells[n]; if (!nc.struct || !STRUCTS[nc.struct].isWarrior || !nc.hp || nc.hp <= 0) return; const maxHp = Math.ceil(STRUCTS[nc.struct].levels[clampLevel(nc.level)].hp * getGlobalHpMult()); nc.hp = Math.min(maxHp, nc.hp + campHeal); }); }); } G.cells.forEach((c, ci) => { if (c.struct !== 'bardo' || !c.hp || c.hp <= 0) return; const bardHeal = Math.min(60, 8 + Math.floor(G.wave * 2)); G.cells.forEach((oc, oi) => { if (!oc.struct || !oc.hp || oc.hp <= 0) return; const os = STRUCTS[oc.struct]; if (os.isWarrior) { const eff = getEffLevel(oi); const ldat = os.isLegendary ? os.levels[0] : os.levels[Math.min(eff, 3)]; const maxHp = Math.ceil(ldat.hp * getGlobalHpMult()); oc.hp = Math.min(maxHp, oc.hp + bardHeal); const el = document.getElementById('grid-container').children[oi]?.querySelector('.hp-fill'); if (el) el.style.width = (Math.max(0, oc.hp) / maxHp * 100) + '%'; } }); }); /* Warrior Self-Heal */ G.cells.forEach((c, ci) => { if (!c.struct || !STRUCTS[c.struct].isWarrior || !c.hp || c.hp <= 0) return; const s = STRUCTS[c.struct]; if (s.isLegendary) return; const bl = clampLevel(c.level); const selfHeal = s.levels[bl].selfHeal; if (selfHeal) { const maxHp = Math.ceil(s.levels[bl].hp * getGlobalHpMult()); const healAmt = Math.ceil(maxHp * selfHeal); c.hp = Math.min(maxHp, c.hp + healAmt); } }); }
+
+        if (tick % 25 === 0) {
+            G.cells.forEach((c, ci) => {
+                if (c.struct === 'cofre') {
+                    const bl = clampLevel(c.level);
+                    let drip = STRUCTS.cofre.levels[bl].drip || 0;
+                    if (hasComboCells('coins_boost', ci)) drip = Math.ceil(drip * 1.6);
+                    if (hasComboCells('plunder', ci)) drip = Math.ceil(drip * 1.6);
+                    if (hasComboCells('logistics', ci)) drip = Math.ceil(drip * 1.5);
+                    if (G.activeBook === 'book_yellow') drip = Math.ceil(drip * 1.5);
+                    if (drip > 0) {
+                        G.coins += drip;
+                        const el = document.getElementById('grid-container').children[ci];
+                        if (el) {
+                            const r = el.getBoundingClientRect();
+                            spawnText(r.left + r.width / 2, r.top + 10, `+${drip}🪙`, 'coin');
+                            el.classList.add('cofre-pulse');
+                            setTimeout(() => el.classList.remove('cofre-pulse'), 400);
+                        }
+                    }
+                }
+            });
+        }
+
+        if (tick % 15 === 0) {
+            // Healer logic
+            G.cells.forEach((c, ci) => {
+                if (!c.struct || c.struct !== 'curandeiro' || !c.hp || c.hp <= 0) return;
+                const bl = clampLevel(c.level);
+                let heal = STRUCTS.curandeiro.levels[bl].healPerTick || 0;
+                if (hasComboCells('frontline', ci)) heal = Math.ceil(heal * 1.4);
+                if (hasComboCells('medcamp', ci)) heal = Math.ceil(heal * 1.5);
+                if (hasFortress) heal = Math.ceil(heal * 1.5);
+                
+                getAdj(ci).forEach(n => {
+                    const nc = G.cells[n];
+                    if (!nc.struct || !STRUCTS[nc.struct].isWarrior || !nc.hp || nc.hp <= 0) return;
+                    if (STRUCTS[nc.struct].isLegendary) return;
+                    const maxHp = Math.ceil(STRUCTS[nc.struct].levels[clampLevel(nc.level)].hp * getGlobalHpMult());
+                    if (nc.struct === 'ninja' && (hasComboCells('ethereal_guard', ci) || hasComboCells('ethereal_guard', n))) heal += 15;
+                    nc.hp = Math.min(maxHp, nc.hp + heal);
+                    const el = document.getElementById('grid-container').children[n]?.querySelector('.hp-fill');
+                    if (el) el.style.width = (Math.max(0, nc.hp) / maxHp * 100) + '%';
+                });
+            });
+
+            if (hasMedcamp) {
+                G.cells.forEach((c, ci) => {
+                    if (c.struct !== 'acampamento' || !hasComboCells('medcamp', ci)) return;
+                    const campHeal = 8;
+                    getAdj(ci).forEach(n => {
+                        const nc = G.cells[n];
+                        if (!nc.struct || !STRUCTS[nc.struct].isWarrior || !nc.hp || nc.hp <= 0) return;
+                        const maxHp = Math.ceil(STRUCTS[nc.struct].levels[clampLevel(nc.level)].hp * getGlobalHpMult());
+                        nc.hp = Math.min(maxHp, nc.hp + campHeal);
+                    });
+                });
+            }
+
+            // Bard global heal
+            G.cells.forEach((c, ci) => {
+                if (c.struct !== 'bardo' || !c.hp || c.hp <= 0) return;
+                const bardHeal = Math.min(60, 8 + Math.floor(G.wave * 2));
+                G.cells.forEach((oc, oi) => {
+                    if (!oc.struct || !oc.hp || oc.hp <= 0) return;
+                    const os = STRUCTS[oc.struct];
+                    if (os.isWarrior) {
+                        const eff = getEffLevel(oi);
+                        const ldat = os.isLegendary ? os.levels[0] : os.levels[Math.min(eff, 3)];
+                        const maxHp = Math.ceil(ldat.hp * getGlobalHpMult());
+                        oc.hp = Math.min(maxHp, oc.hp + bardHeal);
+                        const el = document.getElementById('grid-container').children[oi]?.querySelector('.hp-fill');
+                        if (el) el.style.width = (Math.max(0, oc.hp) / maxHp * 100) + '%';
+                    }
+                });
+            });
+
+            // Self-heal logic
+            G.cells.forEach((c, ci) => {
+                if (!c.struct || !STRUCTS[c.struct].isWarrior || !c.hp || c.hp <= 0) return;
+                const s = STRUCTS[c.struct];
+                if (s.isLegendary) return;
+                const bl = clampLevel(c.level);
+                const selfHeal = s.levels[bl].selfHeal;
+                if (selfHeal) {
+                    const maxHp = Math.ceil(s.levels[bl].hp * getGlobalHpMult());
+                    const healAmt = Math.ceil(maxHp * selfHeal);
+                    c.hp = Math.min(maxHp, c.hp + healAmt);
+                }
+            });
+        }
+
         towers.forEach(t => {
             if (t.isWarrior && (!G.cells[t.idx]?.struct || !G.cells[t.idx].hp || G.cells[t.idx].hp <= 0)) return;
-            t.timer++; if (t.timer < t.spd || !enemies.length) return; t.timer = 0;
+            t.timer++;
+            if (t.timer < t.spd || !G.enemies.length) return;
+            t.timer = 0;
             
             if (t.struct === 'bruxo') {
                 let dbTargets = t.debuffTargets || 1;
                 if (hasCorrupt && hasComboCells('corrupt', t.idx)) dbTargets += 2;
-                const targets = enemies.filter(e => !e.debuffed).slice(0, dbTargets);
+                const targets = G.enemies.filter(e => !e.debuffed).slice(0, dbTargets);
                 targets.forEach(e => {
                     e.debuffed = true;
                     const durMult = hasSoulNode('mag_1') ? 1.45 : 1;
@@ -919,59 +1286,73 @@ function startWave() {
                 return;
             }
 
-            const tgts = t.focusStrongest ? [[...enemies].sort((a,b) => b.hp - a.hp)[0]] : enemies.slice(0, t.targets || 1);
+            const tgts = t.focusStrongest ? [[...G.enemies].sort((a,b) => b.hp - a.hp)[0]] : G.enemies.slice(0, t.targets || 1);
 
             if (t.struct === 'trabuco') {
-                const strongest = [...enemies].sort((a,b) => b.hp - a.hp)[0];
+                const strongest = [...G.enemies].sort((a,b) => b.hp - a.hp)[0];
                 if (strongest) {
                     let hpDmg = Math.ceil(strongest.maxHp * 0.25);
                     if (bardBuff > 0) hpDmg = Math.ceil(hpDmg * 1.4);
                     strongest.hp -= hpDmg;
                     if (t.armorBreak) strongest.armor = Math.floor(strongest.armor * (1 - t.armorBreak));
                     addLog(`⚙️ Trabuco: -${hpDmg}`, 'dmg');
-                    const splash = enemies.filter(e => e !== strongest).slice(0, 5);
+                    const splash = G.enemies.filter(e => e !== strongest).slice(0, 5);
                     splash.forEach(e => {
-                        const sd = Math.ceil(hpDmg * 0.5); e.hp -= sd;
+                        const sd = Math.ceil(hpDmg * 0.5);
+                        e.hp -= sd;
                         if(t.armorBreak) e.armor = Math.floor(e.armor * (1 - t.armorBreak));
                     });
                 }
-                let bf = enemies.length;
-                enemies = enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
-                if (enemies.length !== bf) renderFrame = 5;
+                let bf = G.enemies.length;
+                G.enemies = G.enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
+                if (G.enemies.length !== bf) renderFrame = 5;
                 return;
             }
 
-            if (t.struct === 'magico' && enemies.length) {
-                const target = enemies[0];
+            if (t.struct === 'magico' && G.enemies.length) {
+                const target = G.enemies[0];
                 if (!target.isBoss && !target.transformed && Math.random() < 0.35) {
                     target.originalStats = { icon: target.icon, hp: target.hp, maxHp: target.maxHp, atk: target.atk, armor: target.armor, name: target.name };
                     target.transformed = true; target.transformTimer = 40; target.icon = '🐇'; target.name = 'Coelho'; target.hp = Math.min(target.hp, 5); target.maxHp = 5; target.atk = 0; target.armor = 0;
                     addLog('🎭 Coelho! 🐇', 'special');
                 } else if (target.isBoss) {
-                    let dmg = Math.ceil(target.hp * 0.20) + t.atk; // Dano massivo (20% HP + atk)
+                    let dmg = Math.ceil(target.hp * 0.20) + t.atk;
                     if (bardBuff > 0) dmg = Math.ceil(dmg * 1.4);
-                    target.hp = Math.max(1, target.hp - dmg); 
+                    target.hp = Math.max(1, target.hp - dmg);
                     addLog(`🎭 Dano Mágico (Boss): -${dmg}`, 'dmg');
                 }
-                let bf = enemies.length;
-                enemies = enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
-                if (enemies.length !== bf) renderFrame = 5;
+                let bf = G.enemies.length;
+                G.enemies = G.enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
+                if (G.enemies.length !== bf) renderFrame = 5;
                 return;
             }
 
             tgts.forEach(e => {
                 if (!e) return;
-                if (t.instakill && e.hp/e.maxHp <= t.instakill && !e.isBoss) { e.hp = 0; addLog(`🎯 HEADSHOT!`, 'special'); return; }
-                let dmg = t.atk; if (bardBuff > 0) dmg = Math.ceil(dmg * 1.4);
-                const totalCrit = (t.critChance || 0) + (t.extraCrit || 0);
-                if (totalCrit > 0 && Math.random() < totalCrit) { dmg = Math.ceil(dmg * 2); addLog(`⚔ CRÍTICO!`, 'special'); }
-                
-                // Soul Tree: Physical & Target Based
-                if (t.type === 'physical') {
-                    if (hasSoulNode('phy_2') && e.hp/e.maxHp < 0.5) dmg = Math.ceil(dmg * 1.15);
-                    if (hasSoulNode('phy_3') && e.hp/e.maxHp < 0.25) dmg = Math.ceil(dmg * 1.25);
+                if (hasMaster && t.struct === 'ninja' && e.hp / e.maxHp < 0.3 && !e.isBoss) {
+                    e.hp = 0;
+                    addLog('🔆 MASTER EXECUTE!', 'special');
+                    return;
                 }
-                // Soul Tree: Magical & Debuff
+                if (t.instakill && e.hp / e.maxHp <= t.instakill && !e.isBoss) {
+                    e.hp = 0;
+                    addLog(`🎯 HEADSHOT!`, 'special');
+                    return;
+                }
+                
+                let dmg = t.atk;
+                if (t.struct === 'fire' && e.weakness === 'fire') dmg *= 2; // Bat weakness
+                if (bardBuff > 0) dmg = Math.ceil(dmg * 1.4);
+                const totalCrit = (t.critChance || 0) + (t.extraCrit || 0);
+                if (totalCrit > 0 && Math.random() < totalCrit) {
+                    dmg = Math.ceil(dmg * 2);
+                    addLog(`⚔ CRÍTICO!`, 'special');
+                }
+                
+                if (t.type === 'physical') {
+                    if (hasSoulNode('phy_2') && e.hp / e.maxHp < 0.5) dmg = Math.ceil(dmg * 1.15);
+                    if (hasSoulNode('phy_3') && e.hp / e.maxHp < 0.25) dmg = Math.ceil(dmg * 1.25);
+                }
                 if (t.type === 'magical' || hasSoulNode('mag_2')) {
                     const magStacks = getSoulStacks('mag_2');
                     if (magStacks > 0 && (e.frozen > 0 || e.dot > 0 || e.debuffed)) dmg = Math.ceil(dmg * (1 + magStacks * 0.15));
@@ -980,15 +1361,17 @@ function startWave() {
                         e.frozen = Math.max(e.frozen, Math.ceil(2 * durMult));
                     }
                 }
-                // Soul Tree: Apex
                 if (t.soulDmgBonus) dmg = Math.ceil(dmg * (1 + t.soulDmgBonus));
 
                 if (t.execute && e.hp / e.maxHp <= t.execute) dmg = Math.ceil(dmg * 1.5);
-                let arm = e.armor; if (e.dot > 0 && t.extraPoisonArmor > 0) arm = Math.max(0, arm - Math.floor(arm * t.extraPoisonArmor));
+                let arm = e.armor;
+                if (e.dot > 0 && t.extraPoisonArmor > 0) arm = Math.max(0, arm - Math.floor(arm * t.extraPoisonArmor));
                 const effArm = t.noArmor ? 0 : arm * (1 - (t.armorPen || 0));
                 dmg = Math.max(1, dmg - effArm);
                 if (e.frozen > 0) dmg = Math.ceil(dmg * 1.3);
+                
                 e.hp -= dmg;
+                
                 if (t.freeze) {
                     const durMult = hasSoulNode('mag_1') ? 1.3 : 1;
                     e.frozen = Math.max(e.frozen, Math.ceil(t.freeze * durMult));
@@ -999,31 +1382,189 @@ function startWave() {
                 if (t.struct === 'fire') e.fire = 3;
                 if (t.struct === 'tesla') e.shocked = 2;
             });
-            let bf = enemies.length;
-            enemies = enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
-            if (enemies.length !== bf) renderFrame = 5;
+            
+            let bf = G.enemies.length;
+            G.enemies = G.enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
+            if (G.enemies.length !== bf) renderFrame = 5;
         });
-        if (tick % 24 === 0 && enemies.length) {
-            let regularDmg = 0, shooterDmg = 0; enemies.filter(e => e.frozen <= 0).forEach(e => { const mult = e.special === 'fast' ? 1.5 : 1; const dmg = Math.ceil(e.atk * mult); if (e.special === 'shooter') shooterDmg += dmg; else regularDmg += dmg; });
-            for (let i = 0; i < G.cells.length && regularDmg > 0; i++) { const bc = G.cells[i]; if (!bc.struct || !STRUCTS[bc.struct].isBarricade || bc.hp <= 0) continue; const abs = Math.min(bc.hp, regularDmg); bc.hp -= abs; regularDmg -= abs; const bLv = clampLevel(bc.level); const th = STRUCTS[bc.struct].levels[bLv].thorns; if (th > 0) enemies.filter(e => e.frozen <= 0).forEach(e => e.hp -= th); if (bc.hp <= 0) { addLog(`💥 Muralha rompida!`, 'bad'); bc.struct = null; bc.hp = null; bc.level = 0; renderGrid(); } else { const bel = document.getElementById('grid-container').children[i]?.querySelector('.hp-fill'); if (bel) bel.style.width = (Math.max(0, bc.hp) / STRUCTS[bc.struct].levels[bLv].hp * 100) + '%'; } }
-            let totalDmg = regularDmg + shooterDmg; const venomDot = enemies.reduce((max, e) => (e.special === 'venomous' && e.frozen <= 0) ? Math.max(max, e.structDot || 0) : max, 0); let warriorDied = false;
-            for (let i = 0; i < G.cells.length && totalDmg > 0; i++) { const wc = G.cells[i]; if (!wc.struct || !STRUCTS[wc.struct].isWarrior || !wc.hp || wc.hp <= 0) continue; if (wc.struct === 'bardo') continue; let abs = Math.min(wc.hp, totalDmg); if (hasComboCells('frontline', i)) abs = Math.ceil(abs * 0.85); wc.hp -= abs; totalDmg -= abs; if (venomDot > 0) wc.hp -= venomDot; if (wc.hp <= 0) { addLog(`💀 ${STRUCTS[wc.struct].name} caiu!`, 'bad'); wc.struct = null; wc.hp = null; wc.level = 0; warriorDied = true; } else { const s = STRUCTS[wc.struct]; const maxHp = s.levels[clampLevel(wc.level)].hp; const bel = document.getElementById('grid-container').children[i]?.querySelector('.hp-fill'); if (bel) bel.style.width = (Math.max(0, wc.hp) / maxHp * 100) + '%'; } }
-            for (let i = 0; i < G.cells.length && totalDmg > 0; i++) { const wc = G.cells[i]; if (wc.struct !== 'bardo' || !wc.hp || wc.hp <= 0) continue; let abs = Math.min(wc.hp, totalDmg); wc.hp -= abs; totalDmg -= abs; if (abs > 0) { bardBuff = 50; addLog('🪉 Bardo atingido!', 'special'); } if (wc.hp <= 0) { addLog(`💀 Bardo caiu!`, 'bad'); wc.struct = null; wc.hp = null; wc.level = 0; warriorDied = true; } else { const maxHp = Math.ceil(STRUCTS.bardo.levels[0].hp * getGlobalHpMult()); const bel = document.getElementById('grid-container').children[i]?.querySelector('.hp-fill'); if (bel) bel.style.width = (Math.max(0, wc.hp) / maxHp * 100) + '%'; } }
-            if (warriorDied) renderGrid(); enemies = enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; }); if (hasFortress && totalDmg > 0) totalDmg = Math.ceil(totalDmg * 0.8);
-            if (totalDmg > 0) { G.hp = Math.max(0, G.hp - totalDmg); flash('red'); const hb = document.getElementById('header-hp-container'); hb.classList.remove('shake'); void hb.offsetWidth; hb.classList.add('shake'); addLog(`⚡ BASE: -${totalDmg} HP`, 'bad'); if (G.hp <= 0) { clearInterval(G.timer); G.timer = null; saveRecord(); document.getElementById('game-over').classList.add('active'); return; } }
+
+        // Enemy Attack Phase
+        if (tick % 24 === 0 && G.enemies.length) {
+            let regularDmg = 0, shooterDmg = 0, demoDmg = 0;
+            G.enemies.filter(e => e.frozen <= 0).forEach(e => {
+                const mult = e.special === 'fast' ? 1.5 : 1;
+                const baseAtk = e.atk * mult * (e.isOmega ? 2.5 : 1);
+                const d = Math.ceil(baseAtk);
+                
+                if (e.isOmega && e.auraDmg) { // Solara Solar Dmg
+                    G.cells.forEach(c => { if(c.struct && c.hp !== null) c.hp = Math.max(0, c.hp - (e.auraDmg || 2)); });
+                    if (tick % 48 === 0) addLog(`🔥 CALOR SOLAR: Todas as estruturas sofrendo dano!`, 'bad');
+                }
+
+                if (e.isBatela) { // Batela Healer Hunting
+                    const targets = G.cells.map((c, idx) => ({ ...c, idx })).filter(c => c.struct === 'curandeiro' && c.hp > 0);
+                    if (targets.length) {
+                        const target = targets[Math.floor(Math.random()*targets.length)];
+                        G.cells[target.idx].hp = Math.max(0, G.cells[target.idx].hp - d);
+                        if (tick % 48 === 0) addLog(`🪳 BATELA: Corroendo Suporte!`, 'bad');
+                    } else regularDmg += d;
+                } else if (e.isDemolidor) demoDmg += d;
+                else if (e.special === 'shooter') shooterDmg += d;
+                else regularDmg += d;
+            });
+            
+            if (demoDmg > 0) {
+                let targets = G.cells.map((c, idx) => ({ ...c, idx }))
+                    .filter(c => c.struct && (STRUCTS[c.struct].isBarricade || STRUCTS[c.struct].isWarrior) && c.hp > 0)
+                    .sort((a,b) => b.hp - a.hp);
+                targets.forEach(t => {
+                    if (demoDmg <= 0) return;
+                    const abs = Math.min(t.hp, demoDmg);
+                    G.cells[t.idx].hp -= abs; demoDmg -= abs;
+                    if (G.cells[t.idx].hp <= 0) {
+                        addLog(`💥 Demolido: ${STRUCTS[t.struct].name}`, 'bad');
+                        G.cells[t.idx].struct = null; G.cells[t.idx].hp = null;
+                        renderGrid();
+                    }
+                });
+            }
+
+            // Normal Defense Attack
+            for (let i = 0; i < G.cells.length && regularDmg > 0; i++) {
+                const bc = G.cells[i];
+                if (!bc.struct || !STRUCTS[bc.struct].isBarricade || bc.hp <= 0) continue;
+                const abs = Math.min(bc.hp, regularDmg);
+                bc.hp -= abs;
+                regularDmg -= abs;
+                const bLv = clampLevel(bc.level);
+                const th = STRUCTS[bc.struct].levels[bLv].thorns;
+                if (th > 0) G.enemies.filter(e => e.frozen <= 0).forEach(e => e.hp -= th);
+                if (bc.hp <= 0) {
+                    addLog(`💥 Muralha rompida!`, 'bad');
+                    bc.struct = null; bc.hp = null; bc.level = 0;
+                    renderGrid();
+                } else {
+                    const bel = document.getElementById('grid-container').children[i]?.querySelector('.hp-fill');
+                if (bel) bel.style.width = (Math.max(0, bc.hp) / STRUCTS[bc.struct].levels[bLv].hp * 100) + '%';
+                }
+            }
+
+            let totalDmg = regularDmg + shooterDmg;
+            const venomDot = G.enemies.reduce((max, e) => (e.special === 'venomous' && e.frozen <= 0) ? Math.max(max, e.structDot || 0) : max, 0);
+            let warriorDied = false;
+
+            for (let i = 0; i < G.cells.length && totalDmg > 0; i++) {
+                const wc = G.cells[i];
+                if (!wc.struct || !STRUCTS[wc.struct].isWarrior || !wc.hp || wc.hp <= 0) continue;
+                if (wc.struct === 'bardo') continue;
+                let abs = Math.min(wc.hp, totalDmg);
+                if (hasComboCells('frontline', i)) abs = Math.ceil(abs * 0.85);
+                if (hasComboCells('witcher', i)) abs = Math.ceil(abs * 0.60);
+                wc.hp -= abs; totalDmg -= abs;
+                if (venomDot > 0) wc.hp -= venomDot;
+                if (wc.hp <= 0) {
+                    addLog(`💀 ${STRUCTS[wc.struct].name} caiu!`, 'bad');
+                    wc.struct = null; wc.hp = null; wc.level = 0;
+                    warriorDied = true;
+                } else {
+                    const s = STRUCTS[wc.struct];
+                    const maxHp = s.levels[clampLevel(wc.level)].hp;
+                    const bel = document.getElementById('grid-container').children[i]?.querySelector('.hp-fill');
+                    if (bel) bel.style.width = (Math.max(0, wc.hp) / maxHp * 100) + '%';
+                }
+            }
+
+            // Bard damage last
+            for (let i = 0; i < G.cells.length && totalDmg > 0; i++) {
+                const wc = G.cells[i];
+                if (wc.struct !== 'bardo' || !wc.hp || wc.hp <= 0) continue;
+                let abs = Math.min(wc.hp, totalDmg);
+                wc.hp -= abs; totalDmg -= abs;
+                if (abs > 0) { bardBuff = 50; addLog('🪉 Bardo atingido!', 'special'); }
+                if (wc.hp <= 0) {
+                    addLog(`💀 Bardo caiu!`, 'bad');
+                    wc.struct = null; wc.hp = null; wc.level = 0;
+                    warriorDied = true;
+                } else {
+                    const maxHp = Math.ceil(STRUCTS.bardo.levels[0].hp * getGlobalHpMult());
+                    const bel = document.getElementById('grid-container').children[i]?.querySelector('.hp-fill');
+                    if (bel) bel.style.width = (Math.max(0, wc.hp) / maxHp * 100) + '%';
+                }
+            }
+
+            if (warriorDied) renderGrid();
+            G.enemies = G.enemies.filter(e => { if (e.hp <= 0) { enemyDie(e); return false; } return true; });
+            
+            if (hasFortress && totalDmg > 0) totalDmg = Math.ceil(totalDmg * 0.8);
+            if (totalDmg > 0) {
+                const maxDmg = Math.ceil(G.maxHp * 0.20);
+                const finalBaseDmg = Math.min(totalDmg, maxDmg);
+                G.hp = Math.max(0, G.hp - finalBaseDmg);
+                flash('red');
+                const hb = document.getElementById('header-hp-container');
+                if(hb) { hb.classList.remove('shake'); void hb.offsetWidth; hb.classList.add('shake'); }
+                addLog(`⚡ BASE: -${finalBaseDmg} HP`, 'bad');
+                if (G.hp <= 0) {
+                    return;
+                }
+            }
             renderFrame = 5;
         }
-        if (renderFrame >= 5) { renderEnemies(enemies); updateHUD(); renderFrame = 0; }
-        if (!enemies.length && G.hp > 0) { clearInterval(G.timer); addLog(`✓ WAVE ${G.wave} VENCIDA`, 'good'); flash('green'); saveRecord(); G.cells.forEach((c, ci) => { if (!c.struct) return; const s = STRUCTS[c.struct]; const bl = clampLevel(c.level); if (s.passive && s.levels[bl]?.heal) { let h = s.levels[bl].heal, m = s.levels[bl].maxhp || 0; G.activeCombos.forEach(co => { if (co.bonus === 'heal') h = Math.ceil(h * (1 + co.val)); }); G.maxHp += m; G.hp = Math.min(G.maxHp, G.hp + h); } if (s.isBarricade && c.hp !== null && s.levels[bl].regen) c.hp = Math.min(s.levels[bl].hp, c.hp + s.levels[bl].regen); if (c.struct === 'cofre') { let coins = STRUCTS.cofre.levels[bl].coinsPerWave || 0; G.activeCombos.forEach(co => { if (co.bonus === 'coins_boost' && co.cells.includes(ci)) coins = Math.ceil(coins * (1 + (co.val || 0.5))); }); G.coins += coins; } }); updateHUD(); renderGrid(); setTimeout(() => showBonusModal(), 700); }
+
+        // Verificação central de morte para evitar imortalidade com 0 HP
+        if (G.hp <= 0) {
+            clearInterval(G.timer); G.timer = null; saveRecord();
+            document.getElementById('game-over').classList.add('active');
+            renderGrid();
+            return;
+        }
+
+        if (renderFrame >= 5) { renderEnemies(G.enemies); updateHUD(); renderFrame = 0; }
+        
+        if (!G.enemies.length && G.hp > 0) {
+            clearInterval(G.timer);
+            addLog(`✓ WAVE ${G.wave} VENCIDA`, 'good');
+            flash('green');
+            saveRecord();
+            
+            // O incremento de wave foi movido para advanceWave() para evitar pulo duplo
+            
+            G.cells.forEach((c, ci) => {
+                if (!c.struct) return;
+                const s = STRUCTS[c.struct];
+                const bl = clampLevel(c.level);
+                if (s.passive && s.levels[bl]?.heal) {
+                    let h = s.levels[bl].heal, m = s.levels[bl].maxhp || 0;
+                    G.activeCombos.forEach(co => { if (co.bonus === 'heal') h = Math.ceil(h * (1 + (co.val || 0))); });
+                    G.maxHp += m; G.hp = Math.min(G.maxHp, G.hp + h);
+                }
+                if (s.isBarricade && c.hp !== null && s.levels[bl].regen) c.hp = Math.min(s.levels[bl].hp, c.hp + s.levels[bl].regen);
+                if (c.struct === 'cofre') {
+                    let coins = STRUCTS.cofre.levels[bl].coinsPerWave || 0;
+                    G.activeCombos.forEach(co => { if (co.bonus === 'coins_boost' && co.cells.includes(ci)) coins = Math.ceil(coins * (1 + (co.val || 0.5))); });
+                    G.coins += coins;
+                }
+            });
+            updateHUD();
+            renderGrid();
+            setTimeout(() => showBonusModal(), 700);
+        }
     }, 100);
 }
 
+
 function renderEnemies(enemies) {
     const list = document.getElementById('enemy-list');
+    if(!list) return;
     list.innerHTML = '';
-    enemies.forEach(e => {
+    G.enemies.forEach(e => {
+        const dInfo = DANGER_LEVELS[e.danger || 'delta'];
         const div = document.createElement('div');
         div.className = 'enemy-unit';
+        div.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        div.style.borderLeft = `3px solid ${dInfo.color}`;
+        div.style.boxShadow = `inset 0 0 10px ${dInfo.color}30`;
+        
         if (e.isBoss) div.classList.add('enemy-elite');
         if (e.aura) div.classList.add('enemy-aura-' + e.aura);
         
@@ -1035,9 +1576,9 @@ function renderEnemies(enemies) {
         if (e.debuffed) statusHtml += '<div class="status-icon status-curse">👿</div>';
         statusHtml += '</div>';
         
-        div.innerHTML = `<span class="enemy-icon">${e.icon}</span><div class="enemy-hp"><div class="enemy-hp-fill" style="width:${(e.hp/e.maxHp)*100}%"></div></div>${statusHtml}`;
+        div.innerHTML = `<span class="enemy-icon" style="filter: drop-shadow(0 0 5px ${dInfo.color}60)">${e.icon}</span><div class="enemy-hp"><div class="enemy-hp-fill" style="width:${(e.hp/e.maxHp)*100}%"></div></div>${statusHtml}`;
         
-        div.title = `${e.name}\nHP: ${e.hp}/${e.maxHp}${e.aura ? `\nAura: ${ENEMY_AURAS[e.aura].name}` : ''}`;
+        div.title = `[Protocolo ${dInfo.name}] ${e.name}\nHP: ${e.hp}/${e.maxHp}${e.aura ? `\nAura: ${ENEMY_AURAS[e.aura].name}` : ''}`;
         list.appendChild(div);
     });
 }
@@ -1045,6 +1586,7 @@ function renderEnemies(enemies) {
 function updateWaveProgress(curr, total) {
     const fill = document.getElementById('wave-progress-fill');
     const text = document.getElementById('wave-progress-text');
+    if(!fill || !text) return;
     const pct = ((total - curr) / total) * 100;
     fill.style.width = pct + '%';
     text.textContent = `INIMIGOS: ${curr}/${total}`;
@@ -1058,15 +1600,52 @@ function enemyDie(e) {
     G.kills++;
     G.currentEnemies--; updateWaveProgress(G.currentEnemies, G.totalEnemies);
     let soulsToDrop = 0;
-    // Soul drops: rare but impactful
-    if (e.aura && ENEMY_AURAS[e.aura]?.dropSoul) soulsToDrop += (ENEMY_AURAS[e.aura].soulAmt || 1);
-    // Boss soul drop: calibrated
-    if (e.isBoss && !e.aura) soulsToDrop += Math.max(1, Math.floor(G.wave / 10));
-    // Elite soul drop: 10% chance
-    if (e.special === 'elite' && Math.random() < 0.10) soulsToDrop += 1;
-    // Wave milestone soul bonus (every 10 waves)
-    if (G.wave % 10 === 0 && e.isBoss) soulsToDrop += 2;
-    if (soulsToDrop > 0) { G.souls += soulsToDrop; G.soulsThisRun += soulsToDrop; localStorage.setItem('wdSouls', G.souls); addLog(`🟠 +${soulsToDrop} Souls`, 'special'); }
+    if (e.aura === 'darkness' || e.aura === 'white') {
+        soulsToDrop += (ENEMY_AURAS[e.aura].soulAmt || 1);
+    }
+    if (e.isBoss && G.wave >= 30 && Math.random() < 0.3) soulsToDrop += 1;
+    if (e.isMonken) soulsToDrop += 5;
+    if (e.isMalmir) soulsToDrop += 15;
+    if (e.isUnicorn) soulsToDrop += (e.soulDropAmt || 20);
+
+    if (e.special === 'explosive' && e.deathDmg) {
+        // Chance de 50% de explodir (não são todas que causam dano agora)
+        if (Math.random() < 0.5) {
+            let finalDmg = e.deathDmg;
+            // Inimigos Delta/Epsilon jamais executam o jogador por explosão
+            if ((e.danger === 'delta' || e.danger === 'epsilon') && G.hp <= finalDmg) {
+                finalDmg = Math.max(0, G.hp - 1);
+            }
+            G.hp = Math.max(0, G.hp - finalDmg);
+            addLog(`💥 EXPLOSÃO: ${e.name} (Perigo ${e.danger.toUpperCase()}) causou -${finalDmg} HP`, 'bad');
+            flash('red');
+        } else {
+            addLog(`💡 FAIER: ${e.name} falhou ao detonar!`, 'neutral');
+        }
+    }
+
+    if (e.isLatro) {
+        addLog(`🕷️ LATRO: Liberando Batelas!`, 'bad');
+        for(let j=0; j<2; j++) {
+            const bBase = ENEMIES_DB.find(db => db.name === 'Batela');
+            enemies.push({ ...bBase, dist: e.dist, hp: bBase.hp, maxHp: bBase.hp, atk: bBase.atk, dot: 0, aura: e.aura });
+        }
+    }
+
+    if (soulsToDrop > 0) { G.souls += soulsToDrop; G.soulsThisRun += soulsToDrop; localStorage.setItem('wdSouls', G.souls); addLog(`🟠 +${soulsToDrop} Souls (Relíquia)`, 'special'); }
+    
+    // Grau de Perigo Soul Logic
+    const dangerInfo = DANGER_LEVELS[e.danger];
+    if (dangerInfo && Math.random() < dangerInfo.dropChance) {
+        let amt = 1;
+        if (e.danger === 'omega') amt = 50;
+        else if (e.danger === 'alpha') amt = Math.floor(Math.random() * 2) + 2; 
+        
+        G.souls += amt; G.soulsThisRun += amt;
+        localStorage.setItem('wdSouls', G.souls);
+        addLog(`🟠 +${amt} Souls [Protocolo ${dangerInfo.name}]`, 'special');
+    }
+
     addLog(`💀 ${e.name} (+${e.coinValue}🪙)`, 'coin');
     const r = document.getElementById('enemy-panel').getBoundingClientRect();
     spawnText(r.left + 50, r.top + 40, `+${e.coinValue}`, 'coin');
@@ -1077,28 +1656,52 @@ function enemyDie(e) {
 // ══════════════════════════════════════════════
 
 function showBonusModal() {
+    const devClose = document.querySelector('.dev-close-btn');
+    if (devClose) devClose.style.display = 'none';
     G.phase = 'pick'; G.pendingReward = true; updateHUD();
     document.getElementById('m-title').textContent = `RECOMPENSA WAVE ${G.wave}`;
     const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
     const keys = Object.keys(STRUCTS).filter(k => !STRUCTS[k].isLegendary);
     const opts = []; const shuffled = [...keys].sort(() => 0.5 - Math.random());
-    for (const k of shuffled) { if (opts.length >= (3 + (hasSoulNode('neu_3') ? 1 : 0))) break; const cell = G.cells.find(c => c.struct === k); if (cell && cell.level < 3) opts.push({ key: k, type: 'up', curLv: cell.level }); else opts.push({ key: k, type: 'new' }); }
+    for (const k of shuffled) { 
+        if (opts.length >= (3 + (hasSoulNode('neu_3') ? 1 : 0))) break; 
+        const cell = G.cells.find(c => c.struct === k); 
+        if (cell && cell.level < 3 && (G.wave < 15 || Math.random() < 0.7)) opts.push({ key: k, type: 'up', curLv: cell.level }); 
+        else opts.push({ key: k, type: 'new' }); 
+    }
     
-    // Legendary chance: 0.5% base + 12% per Node level
-    const legC = 0.005 + (getSoulStacks('neu_3') * 0.12);
-    if (Math.random() < legC) { const available = LEGENDARY_KEYS.filter(k => !G.cells.some(c => c.struct === k)); if (available.length) opts.push({ key: available[Math.floor(Math.random()*available.length)], type: 'new', isLegendary: true }); }
+    const legC = 0.001 + (G.wave * 0.0005) + (getSoulStacks('neu_3') * 0.05);
+    if (Math.random() < legC) { 
+        const available = LEGENDARY_KEYS.filter(k => !G.cells.some(c => c.struct === k)); 
+        if (available.length) {
+            opts.push({ key: available[Math.floor(Math.random()*available.length)], type: 'new', isLegendary: true });
+            addLog("🌟 UMA PRESENÇA LENDÁRIA SE MANIFESTOU!", "special");
+        }
+    }
 
-    if (G.gridSize < 5) opts.push({ key: 'expand', type: 'special' }); else opts.push({ key: 'repair', type: 'special' });
+    if (G.gridSize < 5 && G.wave % 5 === 0) opts.push({ key: 'expand', type: 'special' }); 
+    else if (G.hp < G.maxHp * 0.5) opts.push({ key: 'repair', type: 'special' });
 
     opts.forEach(opt => {
         const card = document.createElement('div'); card.className = 'option-card';
         let name, desc, icon, badge, s = null;
         if (opt.key === 'expand') { name = 'EXPANDIR'; icon = '🗺️'; badge = 'SPECIAL'; desc = `Aumenta o Grid.`; card.style.setProperty('--cc','#1abc9c'); }
         else if (opt.key === 'repair') { name = 'REPARO'; icon = '🔧'; badge = 'SPECIAL'; desc = 'Restaura HP Base.'; card.style.setProperty('--cc','#f1c40f'); }
-        else { s = STRUCTS[opt.key]; const lv = opt.type === 'up' ? opt.curLv + 1 : 0; name = s.name; icon = s.icon; desc = s.levels[lv].desc; badge = opt.type === 'up' ? `▲ NV${lv+1}` : (s.isLegendary ? '🌟 LENDÁRIA' : '✦ NOVA'); card.style.setProperty('--cc', s.color); if (s.isLegendary) card.classList.add('legendary-card'); }
+        else { 
+            s = STRUCTS[opt.key]; const lv = opt.type === 'up' ? opt.curLv + 1 : 0; 
+            name = s.name; icon = s.icon; desc = s.levels[lv].desc; 
+            badge = opt.type === 'up' ? `▲ NV${lv+1}` : (s.isLegendary ? '💎 ABSOLUTA' : '✦ NOVA'); 
+            
+            if (s.isLegendary) {
+                card.style.setProperty('--cc', '#ff8c00');
+                card.classList.add('legendary-card-anim');
+            } else {
+                card.style.setProperty('--cc', s.color); 
+            }
+        }
         
-        const typeBar = s ? getCardTypeBar(s.type) : '';
-        card.innerHTML = `${typeBar}<div class="option-icon">${icon}</div><div class="option-name">${name}</div><div class="option-desc">${desc}</div><div class="option-tag">${badge}</div>`;
+        const typeBar = s ? getCardTypeBar(s.isLegendary ? 'legendary' : s.type) : '';
+        card.innerHTML = `${typeBar}<div class="option-icon" style="${s?.isLegendary ? 'filter: drop-shadow(0 0 10px #ffd700); font-size: 45px;' : ''}">${icon}</div><div class="option-name" style="${s?.isLegendary ? 'color: #ffd700; text-shadow: 0 0 10px #ff8c00;' : ''}">${name}</div><div class="option-desc">${desc}</div><div class="option-tag" style="${s?.isLegendary ? 'background: #ff8c00; color: #fff; border: 1px solid #ffd700;' : ''}">${badge}</div>`;
         card.onclick = () => handleChoice(opt);
         grid.appendChild(card);
     });
@@ -1113,7 +1716,29 @@ function handleChoice(opt) {
     else { preparePlacement(opt.key, 0); }
 }
 
-function advanceWave() { G.wave++; G.shopRerollCost = 3; saveRecord(); G.phase = 'idle'; updateHUD(); renderGrid(); }
+function advanceWave() { 
+    G.pendingReward = false; 
+    G.wave++; 
+    
+    // Evento Altar de Amuletos (Interlúdio de Descanso)
+    // if (G.wave === 1 || G.wave % 10 === 0) {
+    //     openAmuletAltar(); // Implementação futura: Mostra o Altar e trava a progressão
+    //     // return; // Pausa o avanço automático da wave
+    // }
+    
+    // Gatilho Ômega: Verificado no início de cada novo setor
+    G.omegaWaveTriggered = (G.wave > 20 && Math.random() < 0.08);
+    if (G.omegaWaveTriggered) {
+        addLog('⚠️ ALERTA DE SETOR: PROTOCOLO ÔMEGA ATIVADO!', 'special');
+        if(window.vibrate) window.vibrate([100, 50, 100]);
+    }
+
+    G.shopRerollCost = 3; 
+    saveRecord(); 
+    G.phase = 'idle'; 
+    updateHUD(); 
+    renderGrid(); 
+}
 
 function preparePlacement(key, cost) {
     G.placing = key; G.placingCost = cost; G.phase = 'place';
@@ -1141,10 +1766,8 @@ function placeAt(idx) {
     const s = STRUCTS[G.placing];
 
     if (cell.struct) {
-        // Tentar Upgrade (Merge)
         if (cell.struct === G.placing && cell.level < s.levels.length - 1) {
             cell.level++;
-            // Restaurar vida no upgrade se for combatente
             if (cell.hp !== null) {
                 cell.hp = Math.ceil(s.levels[cell.level].hp * getGlobalHpMult());
             }
@@ -1154,7 +1777,6 @@ function placeAt(idx) {
             return;
         }
     } else {
-        // Novo Posicionamento
         const isHp = s.isBarricade || s.isWarrior;
         G.cells[idx] = { 
             struct: G.placing, 
@@ -1175,7 +1797,13 @@ function placeAt(idx) {
     updateHUD(); renderGrid();
 }
 
-function getGlobalHpMult() { if (G.activeBook === 'book_green') return 1.3; if (G.activeBook === 'book_trinity') return 1.2; return 1; }
+function getGlobalHpMult() { 
+    let mult = 1;
+    if (G.activeBook === 'book_green') mult += 0.3; 
+    if (G.activeBook === 'book_trinity') mult += 0.2; 
+    mult += (G.wave * 0.05); 
+    return mult; 
+}
 
 // ══════════════════════════════════════════════
 // SHOP & CODEX
@@ -1188,7 +1816,6 @@ function rerollShop() {
     const discount = stacks * 3;
     const finalCost = Math.max(0, G.shopRerollCost - discount);
     if (stacks >= 3) {
-        // Free reroll at level 3
         populateShop(); updateHUD();
         return;
     }
@@ -1205,11 +1832,10 @@ function populateShop() {
     document.getElementById('reroll-cost-val').textContent = stacks >= 3 ? 'GRÁTIS' : finalCost;
     document.getElementById('shop-coins-val').textContent = Math.floor(G.coins);
     
-    // 🟢 SUPPLY BASE (Comum)
     const gn = document.getElementById('shop-grid-normal'); gn.innerHTML = '';
     const keys = Object.keys(STRUCTS).filter(k => !STRUCTS[k].isLegendary).sort(() => 0.5 - Math.random()).slice(0, 3);
     keys.forEach(k => {
-        const s = STRUCTS[k], cost = 30 + Math.floor(G.wave * 8);
+        const s = STRUCTS[k], cost = 30 + Math.floor(G.wave * 5); 
         const card = document.createElement('div'); 
         card.className = `option-card ${G.coins < cost ? 'disabled' : ''}`; 
         card.style.setProperty('--cc', s.color);
@@ -1224,10 +1850,10 @@ function populateShop() {
         gn.appendChild(card);
     });
 
-    // 🔴 MERCADO NEGRO (Alto Risco)
     const bmSection = document.getElementById('black-market-section');
     const gb = document.getElementById('shop-grid-black');
-    bmSection.style.display = 'block'; // Sempre visível agora
+    if(!bmSection || !gb) return;
+    bmSection.style.display = 'block';
     
     if (G.wave >= 10) {
         gb.innerHTML = '';
@@ -1281,89 +1907,171 @@ function switchCodexTab(tab) {
 
 function renderCodex(tab = 'bestiary') {
     const content = document.getElementById('codex-content');
+    if (!content) return;
     content.classList.remove('codex-animate');
-    void content.offsetWidth; // Trigger reflow
+    void content.offsetWidth;
     content.classList.add('codex-animate');
     
     if (tab === 'bestiary') {
-        let h = `<div class="codex-grid">`;
-        ENEMIES_DB.forEach(e => {
-            const disc = bestiaryData[e.name];
-            h += `<div class="codex-card ${disc ? 'unlocked' : 'locked'}">
-                <div class="codex-card-icon">${disc ? e.icon : '?'}</div>
-                <div class="codex-card-name">${disc ? e.name : '???'}</div>
-                <div class="codex-card-desc">${disc ? e.desc : 'Derrote para descobrir.'}</div>
-            </div>`;
+        let h = `<div class="codex-sections">`;
+        const dangerKeys = ['delta', 'gamma', 'beta', 'epsilon', 'alpha', 'omega'];
+        
+        dangerKeys.forEach(dk => {
+            const dangerInfo = DANGER_LEVELS[dk];
+            const enemiesOfDanger = ENEMIES_DB.filter(e => e.danger === dk);
+            if (enemiesOfDanger.length === 0) return;
+
+            h += `<div class="codex-section">
+                <div style="display: flex; align-items: center; justify-content: center; margin: 30px 0 20px 0;">
+                    <div style="flex:1; height:1px; background: linear-gradient(to right, transparent, ${dangerInfo.color});"></div>
+                    <div style="padding: 0 20px; font-family: var(--font-title); font-size: 16px; font-weight: 900; letter-spacing: 2px; color: ${dangerInfo.color}; text-shadow: 0 0 10px ${dangerInfo.color}60;">
+                        PROTOCOLO ${dangerInfo.name}
+                    </div>
+                    <div style="flex:1; height:1px; background: linear-gradient(to left, transparent, ${dangerInfo.color});"></div>
+                </div>
+                <div style="text-align:center; font-size: 10px; color: var(--text-dim); margin-top: -15px; margin-bottom: 20px; font-style: italic; letter-spacing: 1px;">
+                    ${dangerInfo.desc}
+                </div>
+                <div class="codex-grid">`;
+
+            enemiesOfDanger.forEach(e => {
+                const disc = bestiaryData[e.name];
+                h += `<div class="codex-card ${disc ? 'unlocked' : 'locked'}" style="${disc ? `border-color:${dangerInfo.color}` : ''}">
+                    <div class="codex-card-icon" style="${disc ? `text-shadow: 0 0 15px ${dangerInfo.color}` : ''}">${disc ? e.icon : '?'}</div>
+                    <div class="codex-card-name" style="${disc ? `color:${dangerInfo.color}` : ''}">${disc ? e.name : '???'}</div>
+                    <div class="codex-card-desc" style="font-size: 11px;">${disc ? e.desc : 'Derrote para descobrir.'}</div>
+                </div>`;
+            });
+            h += `</div></div>`;
         });
         content.innerHTML = h + '</div>';
     } else if (tab === 'structures') {
         let h = `<div class="codex-sections">`;
-        
+        h += `<div class="codex-section">
+            <div style="display: flex; align-items: center; justify-content: center; margin: 30px 0 20px 0;">
+                <div style="flex:1; height:1px; background: linear-gradient(to right, transparent, #ff8c00);"></div>
+                <div style="padding: 0 20px; font-family: var(--font-title); font-size: 18px; font-weight: 900; letter-spacing: 2px; color: #ffd700; text-shadow: 0 0 10px #ff8c00; display:flex; align-items:center; gap: 8px;">
+                    ✨ RELÍQUIAS LENDÁRIAS
+                </div>
+                <div style="flex:1; height:1px; background: linear-gradient(to left, transparent, #ff8c00);"></div>
+            </div>
+            <div class="codex-grid">`;
+        LEGENDARY_KEYS.forEach(k => {
+            const s = STRUCTS[k];
+            const isUnlocked = hasDiscoveredLegendary(k);
+            const specName = k === 'bardo' ? 'Ode à Vitória' : (k === 'trabuco' ? 'Aniquilação' : 'Caos Arcano');
+            
+            if (isUnlocked) {
+                h += `<div class="codex-card" style="border-color: #ff8c00; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div class="codex-card-icon" style="margin-bottom: 5px;">${s.icon}</div>
+                    <div class="codex-card-name" style="color: #ffd700; width: 100%;">${s.name}</div>
+                    <div style="height: 20px; margin-top: 5px;"><span class="badge" style="color:#ffd700; border-color:#ff8c00; background: rgba(255,140,0,0.1); padding: 2px 8px; font-size: 9px; font-weight: bold;">✦ LENDÁRIA</span></div>
+                    <div class="codex-card-desc" style="flex: 1; width: 100%;">
+                        <div style="margin-top: 10px; font-size: 11px; text-align: center; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); width: 100%; min-height: 165px; color: #ff8c00; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; justify-content: center;">
+                            Habilidade Especial:<br>${specName}
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                h += `<div class="codex-card" style="border-color: #222; background: rgba(10,10,10,0.9); display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div class="codex-card-icon" style="filter: brightness(0) opacity(0.4); margin-bottom: 5px;">${s.icon}</div>
+                    <div class="codex-card-name" style="color: #444; width: 100%;">???</div>
+                    <div style="height: 20px; margin-top: 5px;"><span class="badge" style="color:#333; border-color:#222; background: rgba(255,255,255,0.02); padding: 2px 8px; font-size: 9px; font-weight: bold;">✦ LENDÁRIA</span></div>
+                    <div class="codex-card-desc" style="flex: 1; width: 100%;">
+                        <div style="margin-top: 10px; font-size: 10px; text-align: center; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.02); width: 100%; min-height: 165px; color: #555; font-weight: normal; letter-spacing: 1px; text-transform: uppercase; font-style: italic; display: flex; align-items: center; justify-content: center;">
+                            Relíquia não descoberta
+                        </div>
+                    </div>
+                </div>`;
+            }
+        });
+        h += `</div></div>`;
         const typeMapping = {
             'physical': { title: '⚔️ FÍSICOS', color: 'var(--theme-physical)' },
             'magical': { title: '🔮 MÁGICOS', color: 'var(--theme-magic)' },
             'support': { title: '🛡️ SUPORTE', color: 'var(--theme-support)' }
         };
-
         Object.keys(typeMapping).forEach(tKey => {
-            const structsOfType = Object.keys(STRUCTS).filter(k => STRUCTS[k].type === tKey);
+            const structsOfType = Object.keys(STRUCTS).filter(k => STRUCTS[k].type === tKey && !STRUCTS[k].isLegendary);
             if (structsOfType.length === 0) return;
-            
             h += `<div class="codex-section">
                 <div style="display: flex; align-items: center; justify-content: center; margin: 30px 0 20px 0;">
                     <div style="flex:1; height:1px; background: linear-gradient(to right, transparent, ${typeMapping[tKey].color});"></div>
-                    <div style="padding: 0 20px; font-family: var(--font-title); font-size: 20px; font-weight: 900; letter-spacing: 2px; color: ${typeMapping[tKey].color}; text-shadow: 0 0 15px ${typeMapping[tKey].color}80; display:flex; align-items:center;">
+                    <div style="padding: 0 20px; font-family: var(--font-title); font-size: 18px; font-weight: 900; letter-spacing: 2px; color: ${typeMapping[tKey].color}; opacity: 0.8;">
                         ${typeMapping[tKey].title}
                     </div>
                     <div style="flex:1; height:1px; background: linear-gradient(to left, transparent, ${typeMapping[tKey].color});"></div>
                 </div>
                 <div class="codex-grid">`;
-                
             structsOfType.forEach(k => {
                 const s = STRUCTS[k];
                 let tagsHtml = '';
-                if (s.isWarrior && s.isLegendary) {
-                    tagsHtml += `<span class="badge" style="color:var(--gold); border-color:var(--gold); padding: 2px 6px; font-size: 9px;">🦸‍♂️ GUERREIRO LENDÁRIO</span> `;
-                } else {
-                    if (s.isWarrior) tagsHtml += `<span class="badge" style="color:var(--red); border-color:var(--red); padding: 2px 6px; font-size: 9px;">⚔️ GUERREIRO</span> `;
-                    if (s.isLegendary) tagsHtml += `<span class="badge" style="color:var(--gold); border-color:var(--gold); padding: 2px 6px; font-size: 9px;">🌟 LENDÁRIA</span> `;
-                }
-
-                let levelsHtml = '<div style="margin-top: 10px; font-size: 11.5px; text-align: center; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); width: 100%;">';
+                if (s.isWarrior) tagsHtml += `<span class="badge" style="color:var(--red); border-color:var(--red); padding: 2px 6px; font-size: 9px;">⚔️ GUERREIRO</span> `;
+                let levelsHtml = '<div style="margin-top: 10px; font-size: 11.5px; text-align: center; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); width: 100%; min-height: 165px; display: flex; flex-direction: column; justify-content: center;">';
                 s.levels.forEach((lv, i) => {
-                    levelsHtml += `<div style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: ${i < s.levels.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none'}; color: ${i === 3 ? 'var(--gold)' : 'var(--text-dim)'}; line-height: 1.4;">${lv.desc}</div>`;
+                    levelsHtml += `<div style="padding: 4px 0; border-bottom: ${i < s.levels.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none'}; color: ${i === 3 ? 'var(--gold)' : 'var(--text-dim)'}; line-height: 1.3;">${lv.desc}</div>`;
                 });
                 levelsHtml += '</div>';
-
-                h += `<div class="codex-card" style="border-color:${s.color}">
-                    <div class="codex-card-icon">${s.icon}</div>
-                    <div class="codex-card-name">${s.name}</div>
-                    <div style="margin-bottom: 8px;">${tagsHtml}</div>
-                    <div class="codex-card-desc" style="flex: initial;">${levelsHtml}</div>
+                h += `<div class="codex-card" style="border-color:${s.color}; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div class="codex-card-icon" style="margin-bottom: 5px;">${s.icon}</div>
+                    <div class="codex-card-name" style="width: 100%;">${s.name}</div>
+                    <div style="height: 20px; margin-top: 5px;">${tagsHtml}</div>
+                    <div class="codex-card-desc" style="flex: 1; width: 100%;">${levelsHtml}</div>
                 </div>`;
             });
             h += `</div></div>`;
         });
         content.innerHTML = h;
-    } else {
-        let h = `<div class="codex-grid">`;
-        COMBOS.forEach(c => {
-            // New: structs is an array of keys
-            const iconsHtml = c.structs.map(sk => {
-                const s = STRUCTS[sk];
-                const icon = s ? s.icon : '⚙️';
-                return `<span style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 6px; font-size: 16px;">${icon}</span>`;
-            });
-            
-            const visualFormula = `<div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                ${iconsHtml.join('<span style="color: var(--text-dim); font-size: 14px; font-weight: bold;">➕</span>')}
-            </div>`;
+    } else if (tab === 'combos') {
+        const categories = {
+            'warrior': { title: '⚔️ SINERGIAS DE GUERRA', color: 'var(--red)', shadow: 'rgba(231,76,60,0.2)' },
+            'elemental': { title: '🔮 ELEMENTAL & MAGIA', color: 'var(--theme-magic)', shadow: 'rgba(0,188,212,0.2)' },
+            'economy': { title: '💰 TÁTICA & ECONOMIA', color: 'var(--gold)', shadow: 'rgba(241,196,15,0.2)' },
+            'legendary': { title: '✨ COMBOS SECRETOS', color: '#00d2ff', shadow: '#00d2ff50' }
+        };
 
-            h += `<div class="codex-card" style="border-color:${c.color}; display: flex; flex-direction: column; justify-content: center;">
-                <div class="codex-card-name" style="color:${c.color}; text-shadow: 0 0 10px ${c.color}60; font-size: 16px;">${c.name}</div>
-                ${visualFormula}
-                <div class="codex-card-desc" style="font-size: 12px;">${c.detail}</div>
-            </div>`;
+        let h = `<div class="codex-sections">`;
+        Object.entries(categories).forEach(([catKey, catData]) => {
+            const combosInCat = COMBOS.filter(c => c.category === catKey);
+            if (combosInCat.length === 0) return;
+
+            h += `<div class="codex-section">
+                <div style="display: flex; align-items: center; justify-content: center; margin: 30px 0 20px 0;">
+                    <div style="flex:1; height:1px; background: linear-gradient(to right, transparent, ${catData.color});"></div>
+                    <div style="padding: 0 20px; font-family: var(--font-title); font-size: 16px; font-weight: 900; letter-spacing: 2px; color: ${catData.color}; text-shadow: 0 0 10px ${catData.shadow};">
+                        ${catData.title}
+                    </div>
+                    <div style="flex:1; height:1px; background: linear-gradient(to left, transparent, ${catData.color});"></div>
+                </div>
+                <div class="codex-grid">`;
+            
+            combosInCat.forEach(c => {
+                const isUnlocked = c.category !== 'legendary' || hasDiscoveredCombo(c.id);
+                const iconsHtml = c.structs.map(sk => {
+                    const s = STRUCTS[sk];
+                    const icon = isUnlocked ? (s ? s.icon : '⚙️') : '?';
+                    return `<span style="background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 8px; font-size: 16px; filter: ${isUnlocked ? 'none' : 'brightness(0) opacity(0.3)'}">${icon}</span>`;
+                });
+
+                const visualFormula = `<div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    ${iconsHtml.join('<span style="color: var(--text-dim); font-size: 12px; opacity:0.5;">➕</span>')}
+                </div>`;
+
+                if (isUnlocked) {
+                    h += `<div class="codex-card" style="border-color:${c.color}; min-height: 160px; display: flex; flex-direction: column; justify-content: center; background: rgba(0,0,0,0.3);">
+                        <div class="codex-card-name" style="color:${c.color}; text-shadow: 0 0 10px ${c.color}60; font-size: 14px; margin-bottom: 12px;">${c.name}</div>
+                        ${visualFormula}
+                        <div class="codex-card-desc" style="font-size: 11px; line-height: 1.5; color: var(--text-dim);">${c.detail}</div>
+                    </div>`;
+                } else {
+                    h += `<div class="codex-card locked" style="border-color:#222; min-height: 160px; display: flex; flex-direction: column; justify-content: center; background: rgba(10,10,10,0.85);">
+                        <div class="codex-card-name" style="color:#444; font-size: 14px; margin-bottom: 12px;">???</div>
+                        ${visualFormula}
+                        <div class="codex-card-desc" style="font-size: 10px; color: #555; font-style: italic; letter-spacing: 1px; text-transform: uppercase;">Combo Secreto</div>
+                    </div>`;
+                }
+            });
+            h += `</div></div>`;
         });
         content.innerHTML = h + '</div>';
     }
@@ -1489,10 +2197,10 @@ function closeLibrary() { document.getElementById('library-overlay').classList.r
 function renderLibrary() {
     const grid = document.getElementById('library-grid');
     if (!grid) return;
-    document.getElementById('lib-soul-total').textContent = G.souls || 0;
+    const soulDisplay = document.getElementById('lib-soul-total');
+    if(soulDisplay) soulDisplay.textContent = G.souls || 0;
     grid.innerHTML = '';
     
-    // Conceito Antigo: Prateleiras por Raridade
     const shelves = [
         { id: 'rare', name: 'PRATELEIRA COMUM', color: 'var(--blue)', icon: '📘' },
         { id: 'epic', name: 'PRATELEIRA ÉPICA', color: '#9b59b6', icon: '📕' },
@@ -1515,7 +2223,6 @@ function renderLibrary() {
             const isActive = G.activeBook === b.id;
             const card = document.createElement('div');
             
-            // Lógica de Trava: Apenas 1 livro por run
             card.className = `option-card ${b.css} ${G.boughtBookThisRun && !isActive ? 'disabled' : ''} ${!canBuy && !isActive ? 'disabled' : ''} ${isActive ? 'active-book' : ''}`;
             card.style.setProperty('--cc', shelf.color);
 
@@ -1536,7 +2243,7 @@ function renderLibrary() {
                     localStorage.setItem('wdSouls', G.souls); 
                     closeLibrary(); 
                     updateHUD(); 
-                    if(typeof addLog === 'function') addLog(`📚 Novo Livro Ativado: ${b.name}`, 'special');
+                    addLog(`📚 Novo Livro Ativado: ${b.name}`, 'special');
                 };
             }
             shelfBooksContainer.appendChild(card);
@@ -1553,14 +2260,17 @@ function renderLibrary() {
 function saveRecord() { if (G.wave > G.highScore) { G.highScore = G.wave; localStorage.setItem('wdHighScore', G.highScore); } }
 
 function resetGame() { location.reload(); }
-function confirmReset() { document.getElementById('confirm-reset-overlay').classList.add('active'); }
-function closeConfirmReset() { document.getElementById('confirm-reset-overlay').classList.remove('active'); }
+function confirmReset() { const el = document.getElementById('confirm-reset-overlay'); if(el) el.classList.add('active'); }
+function closeConfirmReset() { const el = document.getElementById('confirm-reset-overlay'); if(el) el.classList.remove('active'); }
 function executeReset() { resetGame(); }
 
 function showStarter() {
+    const devClose = document.querySelector('.dev-close-btn');
+    if (devClose) devClose.style.display = 'none';
     G.phase = 'pick'; G.isStarterPick = true; updateHUD();
     document.getElementById('m-title').textContent = 'ESCOLHA INICIAL';
-    const grid = document.getElementById('opt-grid'); grid.innerHTML = '';
+    const grid = document.getElementById('opt-grid'); if(!grid) return;
+    grid.innerHTML = '';
     ['archer', 'mage', 'espadachim'].forEach(k => {
         const s = STRUCTS[k]; const card = document.createElement('div'); card.className = 'option-card'; card.style.setProperty('--cc', s.color);
         card.innerHTML = `
@@ -1581,6 +2291,7 @@ document.addEventListener('keydown', e => { if (e.code === 'Space' && G.phase ==
 window.openShop = openShop; window.closeShop = closeShop; window.rerollShop = rerollShop;
 window.openCodex = openCodex; window.closeCodex = closeCodex; window.switchCodexTab = switchCodexTab;
 window.openSoulShop = openSoulShop; window.closeSoulShop = closeSoulShop;
+
 function handleCellClick(i) {
     if (G.phase === 'place') {
         placeAt(i);
@@ -1637,10 +2348,99 @@ window.openLibrary = openLibrary; window.closeLibrary = closeLibrary;
 window.startWave = startWave; window.resetGame = resetGame; 
 window.confirmReset = confirmReset; window.closeConfirmReset = closeConfirmReset; window.executeReset = executeReset;
 window.placeAt = placeAt; window.cancelPlacement = cancelPlacement;
+window.openLegendaryPicker = function() {
+    // Usar o overlay do Codex para garantir o mesmo tamanho e ideia
+    const overlay = document.getElementById('codex-overlay');
+    if (!overlay) return;
 
-initGrid(); updateHUD(); renderGrid();
+    // Mudar título e esconder as tabs originais para não confundir
+    const titleEl = overlay.querySelector('.codex-title');
+    const tabsEl = overlay.querySelector('.codex-tabs');
+    const content = document.getElementById('codex-content');
+    
+    if (titleEl) titleEl.textContent = '🛠️ MERCADO DE DESENVOLVEDOR';
+    if (tabsEl) tabsEl.style.display = 'none'; // Esconder abas normais
+
+    // Mudar comportamento do botão Close do Codex temporariamente
+    const closeBtn = overlay.querySelector('.btn-close');
+    const originalClose = closeBtn.onclick;
+    closeBtn.onclick = () => {
+        overlay.classList.remove('active');
+        if (tabsEl) tabsEl.style.display = 'flex';
+        if (titleEl) titleEl.textContent = '📖 CODEX';
+        closeBtn.onclick = originalClose;
+    };
+
+    // Renderizar a "Loja" estilo Codex (Mesmas categorias do original)
+    const categories = {
+        'legendary': { title: '✨ RELÍQUIAS LENDÁRIAS', color: '#ffd700', shadow: '#ff8c00' },
+        'physical': { title: '⚔️ ESTRUTURAS FÍSICAS', color: 'var(--theme-physical)', shadow: 'var(--theme-physical)' },
+        'magical': { title: '🔮 ESTRUTURAS MÁGICAS', color: 'var(--theme-magic)', shadow: 'var(--theme-magic)' },
+        'support': { title: '🛡️ ESTRUTURAS DE SUPORTE', color: 'var(--theme-support)', shadow: 'var(--theme-support)' }
+    };
+
+    let h = `<div class="codex-sections" style="padding-bottom: 50px; max-width: 1000px; margin: 0 auto;">
+        <p style="text-align:center; color:var(--text-dim); font-size:10px; letter-spacing:2px; margin-bottom:30px; font-family:var(--font-mono);">INJEÇÃO DE REALIDADE: SELECIONE UMA ENTIDADE PARA MATERIALIZAÇÃO</p>`;
+
+    const categorized = {};
+    Object.keys(categories).forEach(k => categorized[k] = []);
+    
+    Object.entries(STRUCTS).forEach(([id, s]) => {
+        if (s.isLegendary) { categorized['legendary'].push({id, s}); return; }
+        const type = s.type === 'physical' || s.type === 'magical' || s.type === 'support' ? s.type : 'support';
+        categorized[type].push({id, s});
+    });
+
+    Object.entries(categories).forEach(([catKey, catData]) => {
+        const list = categorized[catKey];
+        if (list.length === 0) return;
+
+        h += `
+            <div style="display:flex; align-items:center; gap:20px; margin: 50px 0 25px 0;">
+                <div style="flex:1; height:1px; background:linear-gradient(to right, transparent, ${catData.color}); opacity:0.6;"></div>
+                <span style="color:${catData.color}; font-family:var(--font-title); font-size:14px; letter-spacing:5px; font-weight:bold; white-space:nowrap; text-shadow: 0 0 10px ${catData.shadow}40;">${catData.title}</span>
+                <div style="flex:1; height:1px; background:linear-gradient(to left, transparent, ${catData.color}); opacity:0.6;"></div>
+            </div>
+            <div class="codex-grid">`;
+
+        list.forEach(({id, s}) => {
+            h += `
+                <div class="codex-card" style="border-color:${s.color || catData.color}; cursor:pointer; padding: 25px 15px; position:relative;" onclick="closeCodex(); window.preparePlacement('${id}', 0)">
+                    <div class="codex-card-name" style="color:${s.color || catData.color}; font-size: 11px; font-weight: 900;">${s.name}</div>
+                    <div class="codex-card-icon" style="font-size: 44px; margin: 18px 0; filter: drop-shadow(0 0 15px ${s.color || catData.color}60);">${s.icon}</div>
+                    <div style="font-family:var(--font-mono); font-size: 9px; opacity: 0.4; text-transform: uppercase; letter-spacing:2px; font-weight: bold;">${s.type}</div>
+                </div>`;
+        });
+        h += `</div>`;
+    });
+
+    content.innerHTML = h + `</div>`;
+    overlay.classList.add('active');
+};
+
+initGrid(); updateHUD(); renderGrid(); 
+// Evento Altar na Wave 1 (Preparação V9)
+// if (G.wave === 1) openAmuletAltar(); else setTimeout(showStarter, 500);
 setTimeout(showStarter, 500);
 
 function animate() { drawComboConnections(); requestAnimationFrame(animate); }
 animate();
 console.log("🚀 WAVE DEFENDER V8 - BALANCED");
+
+// ══════════════════════════════════════════════
+// ALTAR DE AMULETOS (STUB PARA IMPLEMENTAÇÃO V9)
+// ══════════════════════════════════════════════
+
+function openAmuletAltar() {
+    console.log("[ALTAR] Abrindo Altar de Amuletos...");
+    // G.phase = 'rest';
+    // Modal 'altar-overlay' será implementado aqui
+}
+
+function closeAmuletAltar() {
+    console.log("[ALTAR] Fechando Altar de Amuletos...");
+    // G.phase = 'idle';
+    // advanceWave(); // Retoma o fluxo normal
+}
+
+

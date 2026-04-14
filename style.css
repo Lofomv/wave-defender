@@ -1760,3 +1760,56 @@ main {
   font-weight: 900;
   color: var(--gold);
 }
+
+/* PROTOCOLO ÔMEGA - Versão Sóbria & Premium (Glow Integrado) */
+
+/* Alerta de Imigração (Pré-Wave) */
+.omega-warning {
+    animation: omega-glow-pulse 1.5s ease-in-out infinite alternate !important;
+    color: #ff3344 !important;
+    text-shadow: 0 0 15px rgba(255, 51, 68, 0.8) !important;
+}
+
+/* Estado Ativo (Combate Ômega) */
+.omega-active-fire {
+    border-color: #ff0044 !important;
+    box-shadow: 0 0 30px rgba(255, 0, 68, 0.4), inset 0 0 15px rgba(255, 0, 68, 0.2) !important;
+    background: rgba(255, 0, 0, 0.08) !important;
+    animation: omega-area-pulse 2s ease-in-out infinite alternate !important;
+}
+
+/* Aplicação na Caixa de Setor (Wave Info) */
+.wave-info.omega-warning, 
+.wave-info.omega-active-fire {
+    background: rgba(255, 0, 0, 0.12) !important;
+    border: 1px solid #ff3344 !important;
+    box-shadow: 0 0 20px rgba(255, 51, 68, 0.5) !important;
+    transition: all 0.5s var(--glass);
+}
+
+/* Botão de Start Reativo */
+#btn-start.omega-warning {
+    background: rgba(255, 0, 0, 0.1) !important;
+    border-color: #ff3344 !important;
+    color: #ff3344 !important;
+    box-shadow: 0 0 25px rgba(255, 51, 68, 0.3) !important;
+}
+
+#btn-start.omega-active-fire {
+    background: #c0392b !important;
+    color: #fff !important;
+    border-color: #ff0044 !important;
+    box-shadow: 0 0 30px rgba(255, 0, 68, 0.6) !important;
+}
+
+/* Animações Sóbrias */
+@keyframes omega-glow-pulse {
+    0% { filter: brightness(1) drop-shadow(0 0 2px #ff3344); }
+    100% { filter: brightness(1.4) drop-shadow(0 0 15px #ff3344); }
+}
+
+@keyframes omega-area-pulse {
+    0% { box-shadow: 0 0 15px rgba(255, 0, 68, 0.2), inset 0 0 10px rgba(255, 0, 68, 0.1); }
+    100% { box-shadow: 0 0 35px rgba(255, 0, 68, 0.5), inset 0 0 20px rgba(255, 0, 68, 0.2); }
+}
+
